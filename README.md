@@ -74,48 +74,58 @@ Example
 Usage
 --------
 
-    hblog <tier>
+  hblog.py <tier>[,tier ...] [options]
 
-    Modes:
-     --summary         Host-vs-fingerprint frequency table. Default.
+  hblog - a log paser for clusters
 
-                       Log lines are "fingerprinted", usually able to
-                       assign matching fingerprints to log lines that
-                       differ only by timestamp, specific host names,
-                       or other variable arguments
+  Options:
+  -h, --help            show this help message and exit
+  -v, --verbose         print extra information about the state of hblog
+  -n, --nowrap          print characters only up to the width of your terminal
 
-     --detail, -d      Print all matching log lines embellished with
-                       hostnames and fingerprints
+  Modes:
+    Log lines are "fingerprinted", usually able to assign matching
+    fingerprints to log lines that differ only by timestamp, specific host
+    names, or other variables.
 
-     --follow, -f      Like --detail but streaming, just like 'tail -f'
+    --summary           host-vs-fingerprint frequency table (Default mode)
+    -d, --details       print all matching log lines embellished with
+                        hostnames and fingerprints
+    -f, --follow        like --details but streaming, just like 'tail -f'
 
-    Select time:
-     --start=hh:mm:ss  Process only lines after (or before) the
-     --end=hh:mm:ss    specified time. Format is "YYYY-MM-DD hh:mm:ss"
+  Select time:
+    If time selectors are not supplied, only the last one minute of logs
+    will be processed.
 
-     --tail=hh:mm:ss   Process only the last X minutes of each log
-                       (:sec, min, hour:min, hour:min:sec are accepted)
+    -s START, --start=START
+                        process only lines after the time specified
+                        in format YYYY-MM-DD hh:mm:ss
+    -e END, --end=END   process only lines up to the time specified
+                        in format YYYY-MM-DD hh:mm:ss
+    -t TAIL, --tail=TAIL
+                        process only the last X minutes of each logspecified
+                        as one of these formats ":sec", "min", "hour:min"
+    -T TAIL_END, --tail-end=TAIL_END
+                        process only up to the last X minutes of each
+                        logspecified as one of these formats ":sec", "min",
+                        "hour:min"
 
-     --tail-end=hh:mm:ss
-                       Process only up to the last X minutes of each log
-                       (:sec, min, hour:min, hour:min:sec are accepted)
-
-    Filters:
-     --sample=X, -p=X  Sampling rate. Done by sikipping log lines.
-                       Default: 1.0 (read all lines)
-
-     --level=X         The log level to filter for.  Default level: WARN
-
-     --fp=X            Comma separated list of fingerprints to include
-     --supress-fp=X    Comma separated list of fingerprints to exclude
-
-     --re=X            Comma separated list of regex to include
-     --supress-re=X    Comma separated list of regex to exclude
-
-    Notes:
-    ===================================================================
-     - If time selectors are not supplied, only the last 1 minute of
-       logs will be processed.
+  Filters:
+    -l LEVEL, --level=LEVEL
+                        the log level to filter for (default level: WARN)
+    -S SAMPLE, --sample=SAMPLE
+                        sampling rate will be achieved by skipping log lines
+                        (default: 1.0, read all lines)
+    -p FP, --fp=FP      comma-separated list of fingerprints to include
+    -P FP_EXCLUDE, --fp-exclude=FP_EXCLUDE
+                        comma-separated list of fingerprints to exclude
+    -r RE, --re=RE      comma-separated list of regex to include (case
+                        insensitive)
+    -R RE_EXCLUDE, --re-exclude=RE_EXCLUDE
+                        comma-separated list of regex to exclude (case
+                        insensitive)
+    --local             To test hblog. Connect to localhost. Read logs from
+                        ./var/log/hadoop-example.log
 
 
 Open source license
