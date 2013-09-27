@@ -423,10 +423,9 @@ def list_hosts_of_tier(tier_name):
     if tier_name == 'local':
 	return ['localhost']
     else:
-    	cmd = "%s/list_hosts_of_tier* %s" % (SCRIPT_PATH, tier_name)
-    	cmd = "list_hosts_of_tier.sh %s" % (tier_name)  # in PATH
-    	stdout, stderr = run_sh(cmd)
-    	return stdout.split("\n")
+        cmd = "list_hosts_of_tier.sh %s" % (tier_name)  # in PATH
+        stdout, stderr = run_sh(cmd)
+        return stdout.split("\n")
 
 def print_options_summary(options):
     err("---------------------------------------------------------------")
@@ -524,9 +523,9 @@ if (__name__ == "__main__"):
         default='^\t',  # exclude java stack traces
         help="comma-separated list of regex to exclude (case insensitive)")
 
-    group.add_option("--local", action="store_true", default=True,
-	help="To test hblog. Connect to localhost. "
-	"Read logs from ./var/log/hadoop-example.log")
+    group.add_option("--local", action="store_true", default=False,
+        help="To test hblog. Connect to localhost. "
+        "Read logs from ./var/log/hadoop-example.log")
 
     parser.add_option_group(group)
 
@@ -607,11 +606,6 @@ if (__name__ == "__main__"):
     options['log-tiers-globs'] = {}
     options['log-tiers-hosts'] = {}
 
-    if not options['local']:
-        options['hosts-list'] = list(set(flatten([options['log-tiers-hosts'][t] \
-                                               for t in options['log-tiers']])))
-
-
     for logtier in options['log-tiers']:
         options['log-tiers-hosts'][logtier] = list_hosts_of_tier(logtier)
 
@@ -651,6 +645,11 @@ if (__name__ == "__main__"):
             err("Did not recogize the application type from the tier name %s" %
                  logtier)
             sys.exit(1)
+
+    if not options['local']:
+        options['hosts-list'] = \
+            list(set(flatten([options['log-tiers-hosts'][t] \
+                                               for t in options['log-tiers']])))
 
     print_options_summary(options)
 
