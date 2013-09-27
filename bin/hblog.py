@@ -420,10 +420,13 @@ def run_sh(cmd):
     return (stdout, stderr)
 
 def list_hosts_of_tier(tier_name):
-    cmd = "%s/list_hosts_of_tier* %s" % (SCRIPT_PATH, tier_name)
-    cmd = "list_hosts_of_tier.sh %s" % (tier_name)  # in PATH
-    stdout, stderr = run_sh(cmd)
-    return stdout.split("\n")
+    if tier_name == 'local':
+	return ['localhost']
+    else:
+    	cmd = "%s/list_hosts_of_tier* %s" % (SCRIPT_PATH, tier_name)
+    	cmd = "list_hosts_of_tier.sh %s" % (tier_name)  # in PATH
+    	stdout, stderr = run_sh(cmd)
+    	return stdout.split("\n")
 
 def print_options_summary(options):
     err("---------------------------------------------------------------")
@@ -520,6 +523,11 @@ if (__name__ == "__main__"):
     group.add_option("--re-exclude", "-R",
         default='^\t',  # exclude java stack traces
         help="comma-separated list of regex to exclude (case insensitive)")
+
+    group.add_option("--local", action="store_true", default=True,
+	help="To test hblog. Connect to localhost. "
+	"Read logs from ./var/log/hadoop-example.log")
+
     parser.add_option_group(group)
 
     cli_options, cli_args = parser.parse_args()
@@ -570,6 +578,9 @@ if (__name__ == "__main__"):
 
     if len(cli_args) == 1:
         options['log-tiers'] = cli_args[0].split(',')
+    elif options['local']:
+	options['log-tiers'] = ['local']
+	options['hosts-list'] = ['localhost']
     else:
         parser.error("Incorrect number of arguments. "
             "Please specifiy at least one tier. "
@@ -595,6 +606,11 @@ if (__name__ == "__main__"):
 
     options['log-tiers-globs'] = {}
     options['log-tiers-hosts'] = {}
+
+    if not options['local']:
+        options['hosts-list'] = list(set(flatten([options['log-tiers-hosts'][t] \
+                                               for t in options['log-tiers']])))
+
 
     for logtier in options['log-tiers']:
         options['log-tiers-hosts'][logtier] = list_hosts_of_tier(logtier)
@@ -628,13 +644,13 @@ if (__name__ == "__main__"):
         elif logtier.endswith('-mr-slaves'):
             options['log-tiers-globs'][logtier] = \
                 "/var/log/hadoop/*-MR/hadoop-hadoop-tasktracker*"
+        elif logtier == 'local':
+            options['log-tiers-globs'][logtier] = \
+                "./var/log/hadoop*"
         else:
             err("Did not recogize the application type from the tier name %s" %
                  logtier)
             sys.exit(1)
-
-    options['hosts-list'] = list(set(flatten([options['log-tiers-hosts'][t] \
-                                               for t in options['log-tiers']])))
 
     print_options_summary(options)
 

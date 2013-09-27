@@ -3,7 +3,7 @@ hblog
 
 log parser for clusters
 
- - Remote access to logs via a single CLI.
+ - Remote access to logs via a single CLI
  - Multi-host summaries of log line frequencies
  - Muiti-host realtime tailing (like tail -f)
 
@@ -142,4 +142,4 @@ Run
 ----
 
     ./sbin/hblogd.py
-    ./bin/hblog.py --local
+    ./bin/hblog.py --local --start '2011-03-27 13:48:00'
