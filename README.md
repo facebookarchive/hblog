@@ -118,7 +118,7 @@ Usage
        logs will be processed.
 
 
-Free software
+Open source license
 --------
 This project is licensed under the Apache 2.0 license
 
