@@ -28,6 +28,7 @@ import json
 import pprint
 import urllib
 from datetime import datetime, timedelta
+from collections import defaultdict
 
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -120,9 +121,9 @@ class HBLogEvents:
                         if val:
                             host_specific_http_options[key] = val
 
-                    if self.http_options.has_key('offsets_per_host'):
+                    if 'offsets_per_host' in self.http_options:
                         host_specific_http_options['offsets_per_host'] = None
-                        if self.http_options['offsets_per_host'].has_key(host):
+                        if host in self.http_options['offsets_per_host']:
                             host_specific_http_options["universal-offset"] = \
                                 self.http_options['offsets_per_host'][host]
 
@@ -209,13 +210,26 @@ class HBLogEvents:
                         err("Results:")
                         err(pprint.pformat(summary))
 
-                    if len(summary) != 1:
-                        err("ERROR: Got unexpected number of lines (must be 1) "
-                            "for the host summary. Got: \n")
+                    if len(summary) == 0:
+                        err("ERROR: Got an empty list for the host summary")
                         tornado.ioloop.IOLoop.instance().stop()
-                    else:
-                        # Summaries are one-line per result
-                        self.summaries_per_host[host] = summary[0]
+
+                    #  Merge summaries of a single host
+                    summary_merged = {'fp': {}, 'level': defaultdict(int)}
+                    for s in summary:
+                        for fp_key in s['fp'].keys():
+                            if fp_key in summary_merged['fp'].keys():
+                                summary_merged['fp'][fp_key]['count'] += \
+                                                        s['fp'][fp_key]['count']
+                            else:
+                                summary_merged['fp'][fp_key] = s['fp'][fp_key]
+
+                        for level_key in s['level'].keys():
+                            summary_merged['level'][level_key] += \
+                                                           s['level'][level_key]
+
+                    # Summaries are one-line per result
+                    self.summaries_per_host[host] = summary_merged
 
                 self.io_loop.add_callback(self.print_summary_event)
 
@@ -235,6 +249,7 @@ class HBLogEvents:
                 else:
                     fp_summary[fp]['count'] += value['count']
 
+        print("---------------------------------------------------------------")
         print("Fingerprint summary:")
         if len(fp_summary.keys()) > 0:
             print "%7s  %-12s  %-6s       %s" % \
@@ -257,8 +272,7 @@ class HBLogEvents:
                 print l['norm_text'][i: i + summary_width]
                 i += summary_width
 
-        print
-        print
+        print("---------------------------------------------------------------")
         print "Host sumary: "
         if self.options['fp']:
             print_fingerprints = self.options['fp']
@@ -286,6 +300,7 @@ class HBLogEvents:
                             print "%10.10s" % "",
                     print
 
+        print("---------------------------------------------------------------")
         print
         for host, exc in sorted(EXCEPTIONS.items()):
             print "%-30.30s    %s" % (host, exc)
@@ -394,7 +409,7 @@ def tail_time_from_str(a):
     elif len(t) == 3:
         pass
     else:
-        raise Exception("invalid time format")
+        raise HBLogEventsException("invalid time format")
 
     t = [int(x) for x in t]
 
@@ -413,21 +428,87 @@ def run_sh(cmd):
     if stderr:
         stderr = stderr.rstrip()
 
-    if p.returncode != 0:
+    return (stdout, stderr, p.returncode)
+
+def list_hosts_of_tier(tier_name):
+    cmd = "list_hosts_of_tier.sh %s" % (tier_name)  # in PATH
+    stdout, stderr, returncode = run_sh(cmd)
+
+    if returncode == 0:
+        return stdout.split("\n")
+    elif returncode == 2:
+        # Could not recognize tier, lets see it this is a DNS hostname
+        try:
+            socket.gethostbyname(tier_name)
+        except socket.error:
+            raise HBLogEventsException("Tier %s not recognized and "
+                                        "not a hostname" % tier_name)
+        else:
+            return [tier_name]
+
+    else:
         raise HBLogEventsException(
             "Shelling-out returned non-zero exit status %d" % p.returncode)
 
-    return (stdout, stderr)
+# Map tier endings to globs
+tier2glob_map = {
+    'nn': '/var/log/hadoop/*-DFS/hadoop-hadoop-avatarnode*',
+    'dfs-slaves': '/var/log/hadoop/*-DFS/hadoop-hadoop-avatardatanode*',
+    'master': '/var/log/hadoop/*-HBASE/hbase-hadoop-master*',
+    'regionservers': '/var/log/hadoop/*-HBASE/hbase-hadoop-regionserver*',
+    'hbase-thrift': '/var/log/hadoop/*-HBASE/hbase-hadoop-thrift*',
+    'hbase-zookeepers': '/var/log/hadoop/*-HBASE/hbase-hadoop-zookeeper*',
+    'zookeepers': '/var/log/hadoop/*-ZK/hbase-hadoop-zookeeper*',
+    'jt': '/var/log/hadoop/*-MR/hadoop-hadoop-jobtracker*',
+    'mr-slaves': '/var/log/hadoop/*-MR/hadoop-hadoop-tasktracker*',
+    'syslog': '/var/log/system/messages*',
+    'local': './var/log/hadoop*',
+}
 
-def list_hosts_of_tier(tier_name):
-    if tier_name == 'local':
-	return ['localhost']
+tier2glob_equivalents = {
+    'sn': 'nn',
+    'secondary': 'master'
+}
+
+def get_matched_ending(logtier):
+    tier_endings = (tier2glob_map.keys() + tier2glob_equivalents.keys())
+    tier_endings.sort(key=len, reverse=True)  # tiebreaker, match longest
+    matches = [i for i in tier_endings if logtier.endswith(i)]
+    if len(matches) == 0:
+        err("Did not recogize the application type from the tier name %s" %
+             logtier)
+        sys.exit(1)
     else:
-        cmd = "list_hosts_of_tier.sh %s" % (tier_name)  # in PATH
-        stdout, stderr = run_sh(cmd)
-        return stdout.split("\n")
+        matched_ending = matches[0]  # match the first occurance
+
+    if matched_ending in tier2glob_equivalents:
+        return tier2glob_equivalents[matched_ending]
+    else:
+        return matched_ending
 
 def print_options_summary(options):
+    err("---------------------------------------------------------------")
+    err("---------------------------- To make these setting default run:")
+    err("---------------------------------------------------------------")
+    serializable_options = dict(options)
+    del serializable_options['log-tiers-hosts']
+    del serializable_options['log-tiers-globs']
+    del serializable_options['hosts-list']
+    del serializable_options['levels-list']
+    del serializable_options['start']
+    del serializable_options['end']
+    del serializable_options['duration']
+    del serializable_options['local']
+    serializable_options['fp'] = ','.join(serializable_options['fp'])
+    serializable_options['fp-exclude'] = \
+        ','.join(serializable_options['fp-exclude'])
+    serializable_options['re'] = ','.join(serializable_options['re'])
+    serializable_options['re-exclude'] = \
+        ','.join(serializable_options['re-exclude'])
+    err("cat <<'EOF' > $HOME/.hblogrc")
+    err(json.dumps(dict(serializable_options),
+                        sort_keys=True, indent=4, separators=(',', ': ')))
+    err("EOF")
     err("---------------------------------------------------------------")
     err("log-tiers:         %s" % ",".join(options['log-tiers']))
     err("log-tiers-globs:   %s" % ",".join(options['log-tiers-globs'].values()))
@@ -453,17 +534,50 @@ def print_options_summary(options):
     err("re-exclude:        %s" % options['re-exclude'])
     err("---------------------------------------------------------------")
 
+
 if (__name__ == "__main__"):
 
     ALL_LEVELS = ["INFO", "DEBUG", "WARN", "ERROR", "FATAL"]
 
-    parser = OptionParser(usage="%prog <tier>[,tier ...] [options]")
+    default_options = {
+        "details": False,
+        "follow": False,
+        "summary": False,
+        "fp": "",
+        "fp-exclude": "",
+        "level": "WARN",
+        "nowrap": False,
+        "re": "",
+        "re-exclude": "^\t",  # exclude java stack traces
+        "sample": 1.0,
+        "verbose": False,
+        "tail": None,
+        "tail-end": None,
+    }
+
+    # Load defaults from ~/.hblogrc
+    try:
+        with open("%s/.hblogrc" % os.getenv("HOME")) as f:
+            hblogrc_options = json.load(f)
+    except IOError:
+        hblogrc_options = {}
+
+    for k, v in hblogrc_options.items():
+        default_options[k] = v
+
+    tier_arguments = sorted(set(tier2glob_map.keys() +
+                   tier2glob_equivalents.keys()) - set(['local']), key=len)
+    parser = OptionParser(
+        usage="%prog [OPTIONS]... [TIER...] [TIER:HOST...]\n" +
+            ("\n  Where TIER is one of:\n\n  %s" % "\n  ".join(tier_arguments)))
     parser.description = "hblog - a log paser for clusters"
 
     parser.add_option("--verbose", "-v", action="store_true",
+        default=default_options['verbose'],
         help="print extra information about the state of hblog")
 
     parser.add_option("--nowrap", "-n", action="store_true",
+        default=default_options['nowrap'],
         help="print characters only up to the width of your terminal")
 
     group = OptionGroup(parser, title="Modes", description=
@@ -472,7 +586,7 @@ if (__name__ == "__main__"):
             "differ only by timestamp, specific host names, "
             "or other variables.")
 
-    group.add_option("--summary", action="store_true", default=True,
+    group.add_option("--summary", action="store_true", default=False,
         help="host-vs-fingerprint frequency table (Default mode)")
 
     group.add_option("--details", "-d", action="store_true", default=False,
@@ -497,30 +611,36 @@ if (__name__ == "__main__"):
             "in format YYYY-MM-DD hh:mm:ss")
 
     group.add_option("--tail", "-t",
-        help="process only the last X minutes of each log"
+        default=default_options['tail'],
+        help="process only the last X minutes of each log "
             "specified as one of these formats \":sec\", \"min\", \"hour:min\"")
 
     group.add_option("--tail-end", "-T",
-        help="process only up to the last X minutes of each log"
+        default=default_options['tail-end'],
+        help="process only up to the last X minutes of each log "
             "specified as one of these formats \":sec\", \"min\", \"hour:min\"")
 
     parser.add_option_group(group)
 
     group = OptionGroup(parser, "Filters")
     group.add_option("--level", "-l", type='choice',
-        choices=ALL_LEVELS, default="WARN",
+        choices=ALL_LEVELS, default=default_options['level'],
         help="the log level to filter for (default level: %default)")
-    group.add_option("--sample", "-S", type="float", default=1.0,
+    group.add_option("--sample", "-S", type="float",
+        default=default_options['sample'],
         help="sampling rate will be achieved by skipping log lines         "
             "(default: 1.0, read all lines)")
-    group.add_option("--fp", "-p", default="",
+    group.add_option("--fp", "-p",
+        default=default_options['fp'],
         help="comma-separated list of fingerprints to include")
-    group.add_option("--fp-exclude", "-P", default="",
+    group.add_option("--fp-exclude", "-P",
+        default=default_options['fp-exclude'],
         help="comma-separated list of fingerprints to exclude")
-    group.add_option("--re", "-r", default="",
+    group.add_option("--re", "-r",
+        default=default_options['re'],
         help="comma-separated list of regex to include (case insensitive)")
     group.add_option("--re-exclude", "-R",
-        default='^\t',  # exclude java stack traces
+        default=default_options['re-exclude'],
         help="comma-separated list of regex to exclude (case insensitive)")
 
     group.add_option("--local", action="store_true", default=False,
@@ -530,6 +650,7 @@ if (__name__ == "__main__"):
     parser.add_option_group(group)
 
     cli_options, cli_args = parser.parse_args()
+
     options = {}
 
     for key,val in vars(cli_options).items():
@@ -538,9 +659,33 @@ if (__name__ == "__main__"):
     if options['verbose']:
         err("CLI options before processing:")
         err(options)
+        err('')
+        err("CLI args before processing:")
         err(cli_args)
+        err('')
 
     # Process CLI options with hblog buisness logic
+    modes = ['summary', 'follow', 'details']
+
+    hblogrc_mode_selection = [default_options[i] for i in modes]
+    if sum([1 for x in hblogrc_mode_selection if x]) > 1:
+        raise HBLogEventsException("Only one of %s can be set in ~/.hblogrc" %
+                                                                          modes)
+
+    cli_mode_selection = [options[i] for i in modes]
+    if sum([1 for x in cli_mode_selection if x]) > 1:
+        raise HBLogEventsException("Only one of %s can be set in CLI options" %
+                                                                          modes)
+
+    if sum(cli_mode_selection) == 0:
+        options["summary"], options["follow"], options["details"] = \
+                                                          hblogrc_mode_selection
+
+    if sum(cli_mode_selection + hblogrc_mode_selection) == 0:
+        options["summary"] = True
+        options["follow"] = False
+        options["details"] = False
+
     for i in ['fp', 'fp-exclude']:
         options[i] = options[i].split(',')
         if options[i] == ['']:
@@ -575,16 +720,18 @@ if (__name__ == "__main__"):
         err("")
         err("")
 
-    if len(cli_args) == 1:
-        options['log-tiers'] = cli_args[0].split(',')
-    elif options['local']:
-	options['log-tiers'] = ['local']
-	options['hosts-list'] = ['localhost']
+    if options['local']:
+        options['log-tiers'] = ['local']
+        options['hosts-list'] = ['localhost']
+    elif len(cli_args) > 0:
+        options['log-tiers'] = cli_args
+    elif 'log-tiers' in default_options and \
+                                          len(default_options['log-tiers']) > 0:
+        options['log-tiers'] = default_options['log-tiers']
+        err("NOTICE: Using ~/hblogrc default tiers: %s" % options['log-tiers'])
     else:
-        parser.error("Incorrect number of arguments. "
-            "Please specifiy at least one tier. "
-            "Multiple tiers can be comma-separated. "
-            "For example: hblog tier1,tier2")
+        parser.error("Please specifiy at least one tier. "
+            "Multiple tiers can be space-separated.")
 
     # Default to tailing the last 1 minutes, unless in follow mode
     if options['follow']:
@@ -607,49 +754,39 @@ if (__name__ == "__main__"):
     options['log-tiers-hosts'] = {}
 
     for logtier in options['log-tiers']:
-        options['log-tiers-hosts'][logtier] = list_hosts_of_tier(logtier)
-
-        if logtier.endswith('-dfs-nn') or \
-                                                    logtier.endswith('-dfs-sn'):
-            options['log-tiers-globs'][logtier] = \
-                "/var/log/hadoop/*-DFS/hadoop-hadoop-avatarnode*"
-        elif logtier.endswith('-dfs-slaves'):
-            options['log-tiers-globs'][logtier] = \
-                "/var/log/hadoop/*-DFS/hadoop-hadoop-avatardatanode*"
-        elif logtier.endswith('-hbase-master') or \
-                                           logtier.endswith('-hbase-secondary'):
-            options['log-tiers-globs'][logtier] = \
-                "/var/log/hadoop/*-HBASE/hbase-hadoop-master*"
-        elif logtier.endswith('-hbase-regionservers'):
-            options['log-tiers-globs'][logtier] = \
-                "/var/log/hadoop/*-HBASE/hbase-hadoop-regionserver*"
-        elif logtier.endswith('-hbase-thrift'):
-            options['log-tiers-globs'][logtier] = \
-                "/var/log/hadoop/*-HBASE/hbase-hadoop-thrift*"
-        elif logtier.endswith('-hbase-zookeepers'):
-            options['log-tiers-globs'][logtier] = \
-                "/var/log/hadoop/*-HBASE/hbase-hadoop-zookeeper*"
-        elif logtier.endswith('-zookeepers'):
-            options['log-tiers-globs'][logtier] = \
-                "/var/log/hadoop/*-ZK/hbase-hadoop-zookeeper*"
-        elif logtier.endswith('-mr-jt'):
-            options['log-tiers-globs'][logtier] = \
-                "/var/log/hadoop/*-MR/hadoop-hadoop-jobtracker*"
-        elif logtier.endswith('-mr-slaves'):
-            options['log-tiers-globs'][logtier] = \
-                "/var/log/hadoop/*-MR/hadoop-hadoop-tasktracker*"
-        elif logtier == 'local':
-            options['log-tiers-globs'][logtier] = \
-                "./var/log/hadoop*"
+        if ":" in logtier:
+            options['log-tiers-hosts'][logtier] = \
+                                            logtier.split(':')[1].split(',')
         else:
-            err("Did not recogize the application type from the tier name %s" %
-                 logtier)
-            sys.exit(1)
+            options['log-tiers-hosts'][logtier] = list_hosts_of_tier(logtier)
 
-    if not options['local']:
-        options['hosts-list'] = \
-            list(set(flatten([options['log-tiers-hosts'][t] \
+    if options['verbose']:
+        err('log-tiers is:')
+        err(options['log-tiers'])
+        err('')
+        err('log-tiers-hosts is:')
+        err(options['log-tiers-hosts'])
+        err('')
+
+    # Resolve log-tiers-globs
+    for logtier in options['log-tiers']:
+        tier2glob_key = get_matched_ending(logtier.split(':')[0])
+        options['log-tiers-globs'][logtier] = tier2glob_map[tier2glob_key]
+
+    if options['verbose']:
+        err('log-tiers-globs is:')
+        err(options['log-tiers-globs'])
+        err('')
+
+    # Get a flat 'hosts-list' for all the hosts we will be operating on
+    options['hosts-list'] = \
+            list(set(flatten([options['log-tiers-hosts'][t]
                                                for t in options['log-tiers']])))
+
+    if options['verbose']:
+        err('hosts-list is:')
+        err(options['hosts-list'])
+        err('')
 
     print_options_summary(options)
 

@@ -75,9 +75,9 @@ class LogAccessor():
                                              max_klines=max_klines,
                                              debug=self.debug,
                                              verbose=self.verbose)
-                except SingleFileLogAccessorException, e:
-                    self.err("WARNING: Could not open file %s" % filename)
-                    self.err(str(e))
+                except SingleFileLogAccessorException as e:
+                    self.err(("DEBUG: When reading %s "
+                     "lib/LogAccessor.py caught: %s") % (filename, e))
                     self.err("INFO: Skipping bad file %s" % filename)
                 else:
                     self.open_logfiles.append(logfile)

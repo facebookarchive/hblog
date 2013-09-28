@@ -1,18 +1,7 @@
 #!/bin/bash
 
-# Copyright 2013 Facebook, Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License"); you may
-# not use this file except in compliance with the License. You may obtain
-# a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-# License for the specific language governing permissions and limitations
-# under the License.
+set -e
+set -u
 
 function usage(){
   echo "Usage: list_hosts_of_tier <name>"
@@ -23,9 +12,67 @@ if [ "$#" != "1" ]; then
   exit
 fi
 
+function get_hosts(){
+  tier=$1
+
+  # Dummy hostname generator, intead you would want to generate
+  # hosts based on $tier
+  out=$(echo localhost.searchname.com; echo localhost.searchname.com)
+
+
+  exit_status=$?
+  exit $exit_status
+}
+
 tier=$1
-out=$(echo localhost.searchname.com; echo localhost.searchname.com)
-exit_status=$?
+
+case $tier in
+nn)
+  out="$(get_hosts $cellname-dfs-nn)"
+  ;;
+sn)
+  out="$(get_hosts $cellname-dfs-sn)"
+  ;;
+master)
+  out="$(get_hosts $cellname-hbase-master)"
+  ;;
+secondary)
+  out="$(get_hosts $cellname-hbase-secondary)"
+  ;;
+regionservers)
+  out="$(get_hosts $cellname-hbase-regionservers)"
+  ;;
+dfs-slaves)
+  out="$(get_hosts $cellname-dfs-slaves)"
+  ;;
+hbase-thrift)
+  out="$(get_hosts $cellname-hbase-thrift)"
+  ;;
+hbase-zookeepers)
+  out="$(get_hosts $cellname-hbase-zookeepers)"
+  ;;
+jt)
+  out="$(get_hosts $cellname-mr-jt)"
+  ;;
+mr-slaves)
+  out="$(get_hosts $cellname-mr-slaves)"
+  ;;
+zookeepers)
+  out="$(get_hosts $cellname-zookeepers)"
+  ;;
+*-syslog)
+  cellname="$(echo "$tier" | sed 's|-syslog$||')"
+  out="$(get_hosts $cellname-hbase-regionservers)"
+  out="$out\n$(get_hosts $cellname-controllers)"
+  ;;
+syslog)
+  out="$(get_hosts $cellname-hbase-regionservers)"
+  out="$out\n$(get_hosts $cellname-controllers)"
+  ;;
+*)
+
+  out="$(get_hosts $tier)"
+  ;;
+esac
 
 echo -e "$out" | sed 's|.searchname.com||'
-exit $exit_status

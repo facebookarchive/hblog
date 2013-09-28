@@ -127,7 +127,7 @@ class HBLogHandlersParent(tornado.web.RequestHandler):
                 if not previous_line:
                     raise LogAccessorException("Got unrecognized line "
                                             "before any recognized line in %s" %
-                                                               universal_offset)
+                                            log_accessor.get_universal_offset())
 
             if not self.url_args.has_key("universal-offset") and \
                                                           line['ts'] > end_time:

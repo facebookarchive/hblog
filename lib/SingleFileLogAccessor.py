@@ -56,11 +56,18 @@ class SingleFileLogAccessor():
         self.sampling_rate = sampling_rate
         self.seeking = False
 
+        # E.g. 2013-12-30 23:50:50,0000000
         time_re = "\d\d\d\d\-\d\d\-\d\d \d\d:\d\d:\d\d,\d+"
-        self.LOGLINE_RE = re.compile(
-          "(%s) +(\[.*?\])? *(\w+) +(.+)\n" % time_re)
-
         self.STRPTIME_FORMAT = '%Y-%m-%d %H:%M:%S,%f'
+
+        # E.g. Oct  1 13:57:31
+        time_re2 = "[A-Za-z]{3} +\d{1,2} +\d\d:\d\d:\d\d"
+        self.STRPTIME_FORMAT2 = '%Y %b %d %H:%M:%S'
+
+        logline_re_base = "(%s) +(\[.*?\])? *(\w+) +(.+)\n"
+
+        self.LOGLINE_RE = re.compile(logline_re_base % time_re)
+        self.LOGLINE_RE2 = re.compile(logline_re_base % time_re2)
 
         self.SQUEEZE_RE = (
             (re.compile(r"\{.+\}"), "{ ... }"),    # sketchy, but seems right
@@ -72,6 +79,7 @@ class SingleFileLogAccessor():
 
             # IPv4s
             (re.compile(r"(?:[0-9]{1,3}\.){3}[0-9]{1,3}"), "<<IP>>"),
+
 
             # short hex numbers must have leading @ or x
             (re.compile(r"([\@xX])[\dabcdefABCDEF]+"), r"\1#"),
@@ -118,9 +126,9 @@ class SingleFileLogAccessor():
 
         try:
             self.python_file_object = open(filename, "r")
-        except IOError, e:
-            self.err("WARNING: Could not open file %s," % filename)
-            self.err(e)
+        except IOError as e:
+            self.err(("WARNING: When reading %s "
+                     "lib/SingleFileLogAccessor.py caught: %s") % (filename, e))
         else:
             self.file_size = os.fstat(self.python_file_object.fileno()).st_size
 
@@ -187,29 +195,49 @@ class SingleFileLogAccessor():
 
                 # Skip empty lines
                 if len(next_line) > 0:
-                    m = self.LOGLINE_RE.match(next_line)
+                    if self.debug:
+                        self.err('DEBUG: next_line """%s"""' % next_line)
+
+                    m1 = self.LOGLINE_RE.match(next_line)
+                    m2 = None
+
+                    if not m1:
+                        m2 = self.LOGLINE_RE2.match(next_line)
+
+                    if self.debug:
+                        if m1:
+                            self.err('DEBUG: MATCHED %s' %
+                                                        self.LOGLINE_RE.pattern)
+                        if m2:
+                            self.err('DEBUG: MATCHED %s' %
+                                                       self.LOGLINE_RE2.pattern)
+
+                    m = (m1 if m1 else m2)
                     if m:
                         r = {'ts': str(self.str_to_time(m.group(1))),
                              'level': m.group(3),
                              'text': m.group(4)}
 
                         if r['level'] not in self.ALL_LEVELS:
-                            self.err('WARNING: Could not parse Level '
-                                '(got "%s") from "%s"' % (r['level'], next_line))
-                        else:
-                            (r['norm_text'], r['fp']) = self.squeeze(r['text'])
-                            self.next_rec = r
-
                             if self.debug:
-                                self.err('DEBUG: binsearch trace - %s' %
-                                                          self.next_rec['ts'])
+                                self.err('DEBUG: Could not parse Level '
+                                    '(got "%s") from "%s. Defaulting to WARN"' %
+                                                        (r['level'], next_line))
+                            r['level'] = 'WARN'
 
-                                self.err('DEBUG:                     ' + \
-                                                          self.get_filename())
-                                self.err('DEBUG:                     ' + \
-                                                                    next_line)
+                        (r['norm_text'], r['fp']) = self.squeeze(r['text'])
+                        self.next_rec = r
 
-                            yield current_rec
+                        if self.debug:
+                            self.err('DEBUG: binsearch trace - %s' %
+                                                      self.next_rec['ts'])
+
+                            self.err('DEBUG:                     ' +
+                                                      self.get_filename())
+                            self.err('DEBUG:                     ' +
+                                                                next_line)
+
+                        yield current_rec
                     else:
                         self.num_unrecognized_lines += 1
 
@@ -324,10 +352,19 @@ class SingleFileLogAccessor():
         return (s, f)
 
     def str_to_time(self, s):
-        return datetime.strptime(s, self.STRPTIME_FORMAT)  # datetime object
+        try:
+            retval = datetime.strptime(s, self.STRPTIME_FORMAT)
+        except ValueError:
+            # STRPTIME_FORMAT2 impies current year
+            s = re.sub(' ([0-9]) ', r' 0\1 ', s)  # pad with 0s any singe digit
+            s = re.sub(' +', ' ', s)  # remove duplicate spaces
+            retval = datetime.strptime("%s %s" % (datetime.now().year, s),
+                                                          self.STRPTIME_FORMAT2)
+
+        return retval  # datetime object
 
     def err(self, line):
-        sys.stderr.write(line + "\n")
+        sys.stderr.write(str(line) + "\n")
 
     def get_python_file_object_byte_offset(self):
         return self.python_file_object.tell()
