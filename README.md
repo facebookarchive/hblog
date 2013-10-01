@@ -74,58 +74,74 @@ Example
 Usage
 --------
 
-    hblog.py <tier>[,tier ...] [options]
+
+    Usage: hblog.py [OPTIONS]... [TIER...] [TIER:HOST...]
+
+      Where TIER is one of:
+
+      nn
+      jt
+      sn
+      syslog
+      master
+      mr-slaves
+      secondary
+      zookeepers
+      dfs-slaves
+      hbase-thrift
+      regionservers
+      hbase-zookeepers
 
     hblog - a log paser for clusters
 
     Options:
-    -h, --help            show this help message and exit
-    -v, --verbose         print extra information about the state of hblog
-    -n, --nowrap          print characters only up to the width of your terminal
+      -h, --help            show this help message and exit
+      -v, --verbose         print extra information about the state of hblog
+      -n, --nowrap          print characters only up to the width of your terminal
 
-    Modes:
-      Log lines are "fingerprinted", usually able to assign matching
-      fingerprints to log lines that differ only by timestamp, specific host
-      names, or other variables.
+      Modes:
+        Log lines are "fingerprinted", usually able to assign matching
+        fingerprints to log lines that differ only by timestamp, specific host
+        names, or other variables.
 
-      --summary           host-vs-fingerprint frequency table (Default mode)
-      -d, --details       print all matching log lines embellished with
-                          hostnames and fingerprints
-      -f, --follow        like --details but streaming, just like 'tail -f'
+        --summary           host-vs-fingerprint frequency table (Default mode)
+        -d, --details       print all matching log lines embellished with
+                            hostnames and fingerprints
+        -f, --follow        like --details but streaming, just like 'tail -f'
 
-    Select time:
-      If time selectors are not supplied, only the last one minute of logs
-      will be processed.
+      Select time:
+        If time selectors are not supplied, only the last one minute of logs
+        will be processed.
 
-      -s START, --start=START
-                          process only lines after the time specified
-                          in format YYYY-MM-DD hh:mm:ss
-      -e END, --end=END   process only lines up to the time specified
-                          in format YYYY-MM-DD hh:mm:ss
-      -t TAIL, --tail=TAIL
-                          process only the last X minutes of each logspecified
-                          as one of these formats ":sec", "min", "hour:min"
-      -T TAIL_END, --tail-end=TAIL_END
-                          process only up to the last X minutes of each
-                          logspecified as one of these formats ":sec", "min",
-                          "hour:min"
+        -s START, --start=START
+                            process only lines after the time specified
+                            in format YYYY-MM-DD hh:mm:ss
+        -e END, --end=END   process only lines up to the time specified
+                            in format YYYY-MM-DD hh:mm:ss
+        -t TAIL, --tail=TAIL
+                            process only the last X minutes of each log specified
+                            as one of these formats ":sec", "min", "hour:min"
+        -T TAIL_END, --tail-end=TAIL_END
+                            process only up to the last X minutes of each log
+                            specified as one of these formats ":sec", "min",
+                            "hour:min"
 
-    Filters:
-      -l LEVEL, --level=LEVEL
-                          the log level to filter for (default level: WARN)
-      -S SAMPLE, --sample=SAMPLE
-                          sampling rate will be achieved by skipping log lines
-                          (default: 1.0, read all lines)
-      -p FP, --fp=FP      comma-separated list of fingerprints to include
-      -P FP_EXCLUDE, --fp-exclude=FP_EXCLUDE
-                          comma-separated list of fingerprints to exclude
-      -r RE, --re=RE      comma-separated list of regex to include (case
-                          insensitive)
-      -R RE_EXCLUDE, --re-exclude=RE_EXCLUDE
-                          comma-separated list of regex to exclude (case
-                          insensitive)
-      --local             To test hblog. Connect to localhost. Read logs from
-                          ./var/log/hadoop-example.log
+      Filters:
+        -l LEVEL, --level=LEVEL
+                            the log level to filter for (default level: WARN)
+        -S SAMPLE, --sample=SAMPLE
+                            sampling rate will be achieved by skipping log lines
+                            (default: 1.0, read all lines)
+        -p FP, --fp=FP      comma-separated list of fingerprints to include
+        -P FP_EXCLUDE, --fp-exclude=FP_EXCLUDE
+                            comma-separated list of fingerprints to exclude
+        -r RE, --re=RE      comma-separated list of regex to include (case
+                            insensitive)
+        -R RE_EXCLUDE, --re-exclude=RE_EXCLUDE
+                            comma-separated list of regex to exclude (case
+                            insensitive)
+        --local             To test hblog. Connect to localhost. Read logs from
+                            ./var/log/hadoop-example.log
 
 
 Open source license
