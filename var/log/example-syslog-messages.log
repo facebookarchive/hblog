@@ -1,0 +1,45 @@
+Mar  1 03:01:24 Server ntpd[2409]: ntpd 4.2.2p1 at 1.1570-o Sat Dec 19 00:56:13 UTC 2009 (1)
+Mar  1 03:01:24 Server ntpd[2410]: precision = 1.000 usec
+Mar  1 03:01:24 Server ntpd[2410]: Listening on interface wildcard, 0.0.0.0#123 Disabled
+Mar  1 03:01:24 Server ntpd[2410]: Listening on interface wildcard, ::#123 Disabled
+Mar  1 03:01:24 Server ntpd[2410]: Listening on interface lo, ::1#123 Enabled
+Mar  1 03:01:24 Server ntpd[2410]: Listening on interface eth0, fe80::218:8bff:fe80:67db#123 Enabled
+Mar  1 03:01:24 Server ntpd[2410]: Listening on interface lo, 127.0.0.1#123 Enabled
+Mar  1 03:01:24 Server ntpd[2410]: Listening on interface eth0, 192.168.2.1#123 Enabled
+Mar  1 03:01:24 Server ntpd[2410]: kernel time sync status 0040 Apr 13 03:01:30 Server ntpd[2410]: frequency initialized 0.000 PPM from /var/lib/ntp/drift
+Mar  1 07:04:44 Server ntpd[2410]: synchronized to LOCAL(0), stratum 10
+Mar  1 07:04:44 Server ntpd[2410]: kernel time sync enabled 0001
+Mar  1 07:11:09 Server ntpd[2410]: synchronized to 208.75.88.4, stratum 2
+Mar  1 07:17:34 Server ntpd[2410]: synchronized to 64.6.144.6, stratum 2
+Mar  1 07:42:59 Server ntpd[2410]: time reset -27.586767 s
+Mar  1 07:46:35 Server ntpd[2410]: synchronized to LOCAL(0), stratum 10
+Mar  1 07:47:38 Server ntpd[2410]: synchronized to 199.249.224.123, stratum 2
+Mar  1 07:51:53 Server ntpd[2410]: synchronized to 64.6.144.6, stratum 2
+Mar  1 09:27:19 Server ntpd[2410]: ntpd exiting on signal 15
+Mar  1 09:27:19 Server ntpd[6743]: ntpd 4.2.2p1 at 1.1570-o Sat Dec 19
+Mar 27 03:32:35 Server ntpd[2797]: synchronized to LOCAL(0), stratum 10
+Mar 27 03:33:36 Server ntpd[2797]: synchronized to 173.9.142.98, stratum 2
+Mar 27 15:51:56 Server ntpd[2797]: time reset +43208.248852 s
+Mar 27 15:51:56 Server ntpd[2797]: kernel time sync enabled 0001
+Mar 27 15:56:03 Server ntpd[2797]: synchronized to LOCAL(0), stratum 10
+Mar 27 15:56:26 Server ntpd[2797]: synchronized to 169.229.70.183, stratum 3
+Mar 27 16:00:22 Server ntpd[2797]: synchronized to 173.9.142.98, stratum 2
+Mar 27 16:16:59 Server ntpd[2797]: synchronized to 169.229.70.183, stratum 2
+Mar 27 16:16:57 Server ntpd[2797]: time reset -1.830305 s
+Mar 27 16:20:27 Server ntpd[2797]: synchronized to LOCAL(0), stratum 10
+Mar 27 16:22:35 Server ntpd[2797]: synchronized to 169.229.70.183, stratum 2
+Mar 27 16:28:01 Server ntpd[2797]: synchronized to 173.9.142.98, stratum 2
+Mar 27 16:32:29 Server ntpd[2797]: synchronized to 169.229.70.183, stratum 3
+Mar 27 16:36:36 Server ntpd[2797]: synchronized to 173.9.142.98, stratum 2
+Mar 27 16:40:05 Server ntpd[2797]: synchronized to 169.229.70.183, stratum 3
+Mar 27 16:41:57 Server ntpd[2797]: synchronized to LOCAL(0), stratum 10
+Mar 27 16:42:09 Server ntpd[2797]: synchronized to 173.9.142.98, stratum 2
+Mar 27 16:47:28 Server ntpd[2797]: synchronized to LOCAL(0), stratum 10
+Mar 27 16:48:28 Server ntpd[2797]: synchronized to 169.229.70.183, stratum 3
+Mar 27 16:51:44 Server ntpd[2797]: synchronized to 173.9.142.98, stratum 2
+Mar 27 16:53:52 Server ntpd[2797]: synchronized to 173.193.227.67, stratum 4
+Mar 27 16:58:06 Server ntpd[2797]: synchronized to 169.229.70.183, stratum 3
+Mar 27 17:00:18 Server ntpd[2797]: synchronized to LOCAL(0), stratum 10
+Mar 27 17:04:31 Server ntpd[2797]: synchronized to 169.229.70.183, stratum 3
+Mar 27 17:06:44 Server ntpd[2797]: synchronized to LOCAL(0), stratum 10
+Mar 27 19:54:46 Server ntpd[2797]: ntpd exiting on signal 15

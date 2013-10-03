@@ -17,10 +17,10 @@ function get_hosts(){
 
   # Dummy hostname generator, intead you would want to generate
   # hosts based on $tier
-  out=$(echo localhost.searchname.com; echo localhost.searchname.com)
-
+  out="$(echo localhost.searchname.com; echo localhost.searchname.com)"
 
   exit_status=$?
+  echo "$out"
   exit $exit_status
 }
 

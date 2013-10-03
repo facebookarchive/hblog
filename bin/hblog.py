@@ -435,7 +435,7 @@ def list_hosts_of_tier(tier_name):
     stdout, stderr, returncode = run_sh(cmd)
 
     if returncode == 0:
-        return stdout.split("\n")
+        return list(set(stdout.split("\n")))  # dedup
     elif returncode == 2:
         # Could not recognize tier, lets see it this is a DNS hostname
         try:
@@ -451,6 +451,11 @@ def list_hosts_of_tier(tier_name):
             "Shelling-out returned non-zero exit status %d" % p.returncode)
 
 # Map tier endings to globs
+tier2glob_map_examples_for_localhost = {
+    'nn': './var/log/example-hadoop-hadoop-avatarnode.log*',
+    'syslog': './var/log/example-syslog-messages.log*',
+}
+
 tier2glob_map = {
     'nn': '/var/log/hadoop/*-DFS/hadoop-hadoop-avatarnode*',
     'dfs-slaves': '/var/log/hadoop/*-DFS/hadoop-hadoop-avatardatanode*',
@@ -462,7 +467,6 @@ tier2glob_map = {
     'jt': '/var/log/hadoop/*-MR/hadoop-hadoop-jobtracker*',
     'mr-slaves': '/var/log/hadoop/*-MR/hadoop-hadoop-tasktracker*',
     'syslog': '/var/log/system/messages*',
-    'local': './var/log/hadoop*',
 }
 
 tier2glob_equivalents = {
@@ -720,10 +724,7 @@ if (__name__ == "__main__"):
         err("")
         err("")
 
-    if options['local']:
-        options['log-tiers'] = ['local']
-        options['hosts-list'] = ['localhost']
-    elif len(cli_args) > 0:
+    if len(cli_args) > 0:
         options['log-tiers'] = cli_args
     elif 'log-tiers' in default_options and \
                                           len(default_options['log-tiers']) > 0:
@@ -758,7 +759,8 @@ if (__name__ == "__main__"):
             options['log-tiers-hosts'][logtier] = \
                                             logtier.split(':')[1].split(',')
         else:
-            options['log-tiers-hosts'][logtier] = list_hosts_of_tier(logtier)
+            options['log-tiers-hosts'][logtier] = \
+                    list_hosts_of_tier('local' if options['local'] else logtier)
 
     if options['verbose']:
         err('log-tiers is:')
@@ -769,9 +771,14 @@ if (__name__ == "__main__"):
         err('')
 
     # Resolve log-tiers-globs
-    for logtier in options['log-tiers']:
-        tier2glob_key = get_matched_ending(logtier.split(':')[0])
-        options['log-tiers-globs'][logtier] = tier2glob_map[tier2glob_key]
+    if options['local']:
+        for logtier in options['log-tiers']:
+            options['log-tiers-globs'][logtier] = \
+                tier2glob_map_examples_for_localhost[logtier]
+    else:
+        for logtier in options['log-tiers']:
+            tier2glob_key = get_matched_ending(logtier.split(':')[0])
+            options['log-tiers-globs'][logtier] = tier2glob_map[tier2glob_key]
 
     if options['verbose']:
         err('log-tiers-globs is:')

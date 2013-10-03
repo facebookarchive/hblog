@@ -56,18 +56,28 @@ class SingleFileLogAccessor():
         self.sampling_rate = sampling_rate
         self.seeking = False
 
-        # E.g. 2013-12-30 23:50:50,0000000
-        time_re = "\d\d\d\d\-\d\d\-\d\d \d\d:\d\d:\d\d,\d+"
-        self.STRPTIME_FORMAT = '%Y-%m-%d %H:%M:%S,%f'
+        def syslog_timestamp_transform(s):
+            s = re.sub(' ([0-9]) ', r' 0\1 ', s)  # pad with 0s any single digit
+            s = re.sub(' +', ' ', s)  # remove duplicate spaces
+            s = "%s %s" % (datetime.now().year, s)  # imply this year
+            return s
 
-        # E.g. Oct  1 13:57:31
-        time_re2 = "[A-Za-z]{3} +\d{1,2} +\d\d:\d\d:\d\d"
-        self.STRPTIME_FORMAT2 = '%Y %b %d %H:%M:%S'
+        # RE's will be checked in the order as the appear in LOGLINE_RE_LIST
+        self.LOGLINE_RE_LIST = [
+            {'re': re.compile(
+             r'(\d\d\d\d\-\d\d\-\d\d \d\d:\d\d:\d\d,\d+) +(\[.*?\])? *(\w+) +(.+)\n'
+             ),
+             'time_format': '%Y-%m-%d %H:%M:%S,%f',
+             'timestr_transform': None,
+             'comments': 'log4j format. E.g. "2013-12-30 23:50:50,121"'},
 
-        logline_re_base = "(%s) +(\[.*?\])? *(\w+) +(.+)\n"
-
-        self.LOGLINE_RE = re.compile(logline_re_base % time_re)
-        self.LOGLINE_RE2 = re.compile(logline_re_base % time_re2)
+            {'re': re.compile(
+             r'([A-Za-z]{3} +\d{1,2} +\d\d:\d\d:\d\d) +(\[.*?\])? *(\w+) +(.+)\n'
+             ),
+             'time_format': '%Y %b %d %H:%M:%S',
+             'timestr_transform': syslog_timestamp_transform,
+             'comments': 'typical syslog format. E.g. "Oct  1 13:57:31"'},
+        ]
 
         self.SQUEEZE_RE = (
             (re.compile(r"\{.+\}"), "{ ... }"),    # sketchy, but seems right
@@ -198,23 +208,21 @@ class SingleFileLogAccessor():
                     if self.debug:
                         self.err('DEBUG: next_line """%s"""' % next_line)
 
-                    m1 = self.LOGLINE_RE.match(next_line)
-                    m2 = None
+                    m = False
+                    for logline_re in self.LOGLINE_RE_LIST:
+                        m = logline_re['re'].match(next_line)
+                        if m:
+                            if self.debug:
+                                self.err('DEBUG: MATCHED %s' %
+                                                        logline_re.pattern)
 
-                    if not m1:
-                        m2 = self.LOGLINE_RE2.match(next_line)
+                            ts = self.str_to_time(m.group(1),
+                                          time_format=logline_re['time_format'],
+                                      transform=logline_re['timestr_transform'])
+                            break
 
-                    if self.debug:
-                        if m1:
-                            self.err('DEBUG: MATCHED %s' %
-                                                        self.LOGLINE_RE.pattern)
-                        if m2:
-                            self.err('DEBUG: MATCHED %s' %
-                                                       self.LOGLINE_RE2.pattern)
-
-                    m = (m1 if m1 else m2)
                     if m:
-                        r = {'ts': str(self.str_to_time(m.group(1))),
+                        r = {'ts': str(ts),
                              'level': m.group(3),
                              'text': m.group(4)}
 
@@ -351,17 +359,10 @@ class SingleFileLogAccessor():
 
         return (s, f)
 
-    def str_to_time(self, s):
-        try:
-            retval = datetime.strptime(s, self.STRPTIME_FORMAT)
-        except ValueError:
-            # STRPTIME_FORMAT2 impies current year
-            s = re.sub(' ([0-9]) ', r' 0\1 ', s)  # pad with 0s any singe digit
-            s = re.sub(' +', ' ', s)  # remove duplicate spaces
-            retval = datetime.strptime("%s %s" % (datetime.now().year, s),
-                                                          self.STRPTIME_FORMAT2)
-
-        return retval  # datetime object
+    def str_to_time(self, s, time_format, transform):
+        if transform:
+            s = transform(s)
+        return datetime.strptime(s, time_format)  # datetime object
 
     def err(self, line):
         sys.stderr.write(str(line) + "\n")

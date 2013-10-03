@@ -1,0 +1,43 @@
+2011-03-27 13:48:17,701 INFO org.apache.hadoop.hdfs.server.namenode.NameNode: STARTUP_MSG:
+/************************************************************
+STARTUP_MSG: Starting NameNode
+STARTUP_MSG:   host = fxu-t60/127.0.1.1
+STARTUP_MSG:   args = []
+STARTUP_MSG:   version = 0.20.3-dev
+STARTUP_MSG:   build =  -r ; compiled by 'hadoop' on Thu Feb 17 12:24:21 PST 2011
+************************************************************/
+2011-03-27 13:48:17,990 INFO org.apache.hadoop.ipc.metrics.RpcMetrics: Initializing RPC Metrics with hostName=NameNode, port=54310
+2011-03-27 13:48:18,003 INFO org.apache.hadoop.hdfs.server.namenode.NameNode: Namenode up at: localhost/127.0.0.1:54310
+2011-03-27 13:48:18,008 INFO org.apache.hadoop.metrics.jvm.JvmMetrics: Initializing JVM Metrics with processName=NameNode, sessionId=null
+2011-03-27 13:48:18,013 INFO org.apache.hadoop.hdfs.server.namenode.metrics.NameNodeMetrics: Initializing NameNodeMeterics using context object:org.apache.hadoop.metrics.spi.NullContext
+2011-03-27 13:48:18,121 INFO org.apache.hadoop.hdfs.server.namenode.FSNamesystem: fsOwner=hadoop,hadoop,admin
+2011-03-27 13:48:18,121 INFO org.apache.hadoop.hdfs.server.namenode.FSNamesystem: supergroup=supergroup
+2011-03-27 13:48:18,121 INFO org.apache.hadoop.hdfs.server.namenode.FSNamesystem: isPermissionEnabled=true
+2011-03-27 13:48:18,161 INFO org.apache.hadoop.hdfs.server.namenode.metrics.FSNamesystemMetrics: Initializing FSNamesystemMetrics using context object:org.apache.hadoop.metrics.spi.NullContext
+2011-03-27 13:48:18,163 INFO org.apache.hadoop.hdfs.server.namenode.FSNamesystem: Registered FSNamesystemStatusMBean
+2011-03-27 13:48:18,210 INFO org.apache.hadoop.hdfs.server.common.Storage: Storage directory /home/hadoop/datastore/dfs/name does not exist.
+2011-03-27 13:48:18,218 ERROR org.apache.hadoop.hdfs.server.namenode.FSNamesystem: FSNamesystem initialization failed.
+org.apache.hadoop.hdfs.server.common.InconsistentFSStateException: Directory /home/hadoop/datastore/dfs/name is in an inconsistent state: storage directory does not exist or is not accessible.
+    at org.apache.hadoop.hdfs.server.namenode.FSImage.recoverTransitionRead(FSImage.java:290)
+    at org.apache.hadoop.hdfs.server.namenode.FSDirectory.loadFSImage(FSDirectory.java:87)
+    at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.initialize(FSNamesystem.java:311)
+    at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.<init>(FSNamesystem.java:292)
+    at org.apache.hadoop.hdfs.server.namenode.NameNode.initialize(NameNode.java:201)
+    at org.apache.hadoop.hdfs.server.namenode.NameNode.<init>(NameNode.java:279)
+    at org.apache.hadoop.hdfs.server.namenode.NameNode.createNameNode(NameNode.java:956)
+    at org.apache.hadoop.hdfs.server.namenode.NameNode.main(NameNode.java:965)
+2011-03-27 13:48:18,220 INFO org.apache.hadoop.ipc.Server: Stopping server on 54310
+2011-03-27 13:48:18,221 ERROR org.apache.hadoop.hdfs.server.namenode.NameNode: org.apache.hadoop.hdfs.server.common.InconsistentFSStateException: Directory /home/hadoop/datastore/dfs/name is in an inconsistent state: storage directory does not exist or is not accessible.
+    at org.apache.hadoop.hdfs.server.namenode.FSImage.recoverTransitionRead(FSImage.java:290)
+    at org.apache.hadoop.hdfs.server.namenode.FSDirectory.loadFSImage(FSDirectory.java:87)
+    at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.initialize(FSNamesystem.java:311)
+    at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.<init>(FSNamesystem.java:292)
+    at org.apache.hadoop.hdfs.server.namenode.NameNode.initialize(NameNode.java:201)
+    at org.apache.hadoop.hdfs.server.namenode.NameNode.<init>(NameNode.java:279)
+    at org.apache.hadoop.hdfs.server.namenode.NameNode.createNameNode(NameNode.java:956)
+    at org.apache.hadoop.hdfs.server.namenode.NameNode.main(NameNode.java:965)
+ 
+2011-03-27 13:48:18,224 INFO org.apache.hadoop.hdfs.server.namenode.NameNode: SHUTDOWN_MSG:
+/************************************************************
+SHUTDOWN_MSG: Shutting down NameNode at fxu-t60/127.0.1.1
+************************************************************/
