@@ -719,7 +719,8 @@ if (__name__ == "__main__"):
     if options['tail-end']:
         options['end'] = tail_time_from_str(options['tail-end'])
 
-    if len(cli_args) == 0:
+    if len(cli_args) == 0 and len(default_options['log-tiers']) == 0:
+        err("ERROR: You did not provide any arguments")
         parser.print_help()
         err("")
         err("")
