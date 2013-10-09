@@ -91,15 +91,15 @@ class HBLogEvents:
                 else:
                     self.http_options[key] = val
 
-        if self.options['summary']:
+        if self.options['mode'] == 'summary':
             self.http_options['data_type'] = "summary"
             self.http_options['tail'] = "1:00"  # last 1 min
 
-        elif self.options['details']:
+        elif self.options['mode'] == 'details':
             self.http_options['data_type'] = "stream"
             self.http_options['tail'] = "1:00"  # last 1 min
 
-        elif self.options['follow']:
+        elif self.options['mode'] == 'follow':
             self.http_options['data_type'] = "stream"
 
         self.io_loop.add_callback(self.start_http_clients_event)
@@ -194,7 +194,8 @@ class HBLogEvents:
         # Did we reach the last http_client ?
         #
         if len(self.http_clients_finished) >= len(self.http_clients_started):
-            if self.options['details'] or self.options['follow']:
+            if self.options['mode'] == 'details' or \
+                                               self.options['mode'] == 'follow':
                 self.io_loop.add_callback(self.print_details_event)
 
             else:
@@ -327,7 +328,7 @@ class HBLogEvents:
         self.report_blacklisted_hosts()
         sys.stdout.flush()
 
-        if self.options['follow']:
+        if self.options['mode'] == 'follow':
             # Update offsets
             self.http_options['offsets_per_host'] = {}
             for host, exit_state in self.exit_state_per_host.items():
@@ -448,7 +449,7 @@ def list_hosts_of_tier(tier_name):
 
     else:
         raise HBLogEventsException(
-            "Shelling-out returned non-zero exit status %d" % p.returncode)
+            "Shelling-out returned non-zero exit status %d" % returncode)
 
 # Map tier endings to globs
 tier2glob_map_examples_for_localhost = {
@@ -457,38 +458,59 @@ tier2glob_map_examples_for_localhost = {
 }
 
 tier2glob_map = {
-    'nn': '/var/log/hadoop/*-DFS/hadoop-hadoop-avatarnode*',
-    'dfs-slaves': '/var/log/hadoop/*-DFS/hadoop-hadoop-avatardatanode*',
-    'master': '/var/log/hadoop/*-HBASE/hbase-hadoop-master*',
-    'regionservers': '/var/log/hadoop/*-HBASE/hbase-hadoop-regionserver*',
-    'hbase-thrift': '/var/log/hadoop/*-HBASE/hbase-hadoop-thrift*',
-    'hbase-zookeepers': '/var/log/hadoop/*-HBASE/hbase-hadoop-zookeeper*',
-    'zookeepers': '/var/log/hadoop/*-ZK/hbase-hadoop-zookeeper*',
-    'jt': '/var/log/hadoop/*-MR/hadoop-hadoop-jobtracker*',
-    'mr-slaves': '/var/log/hadoop/*-MR/hadoop-hadoop-tasktracker*',
-    'syslog': '/var/log/system/messages*',
+    'endswith': {
+        'nn': '/var/log/hadoop/*-DFS/hadoop-hadoop-avatarnode*',
+        'dfs-slaves': '/var/log/hadoop/*-DFS/hadoop-hadoop-avatardatanode*',
+        'master': '/var/log/hadoop/*-HBASE/hbase-hadoop-master*',
+        'regionservers': '/var/log/hadoop/*-HBASE/hbase-hadoop-regionserver*',
+        'hbase-thrift': '/var/log/hadoop/*-HBASE/hbase-hadoop-thrift*',
+        'hbase-zookeepers': '/var/log/hadoop/*-HBASE/hbase-hadoop-zookeeper*',
+        'zookeepers': '/var/log/hadoop/*-ZK/hbase-hadoop-zookeeper*',
+        'jt': '/var/log/hadoop/*-MR/hadoop-hadoop-jobtracker*',
+        'mr-slaves': '/var/log/hadoop/*-MR/hadoop-hadoop-tasktracker*',
+        'syslog': '/var/log/system/messages*',
+    },
+    'startswith': {
+    }
 }
 
 tier2glob_equivalents = {
-    'sn': 'nn',
-    'secondary': 'master'
+    'endswith': {
+        'sn': 'nn',
+        'secondary': 'master'
+    },
+    'startswith': {
+    }
 }
 
-def get_matched_ending(logtier):
-    tier_endings = (tier2glob_map.keys() + tier2glob_equivalents.keys())
+def get_matched(logtier):
+    tier_prefixes = (tier2glob_map['startswith'].keys() +
+                                     tier2glob_equivalents['startswith'].keys())
+    tier_prefixes.sort(key=len, reverse=True)  # tiebreaker, match longest
+    prefixes_matches = [i for i in tier_prefixes if logtier.startswith(i)]
+
+    tier_endings = (tier2glob_map['endswith'].keys() +
+                                       tier2glob_equivalents['endswith'].keys())
     tier_endings.sort(key=len, reverse=True)  # tiebreaker, match longest
-    matches = [i for i in tier_endings if logtier.endswith(i)]
-    if len(matches) == 0:
+    endings_matches = [i for i in tier_endings if logtier.endswith(i)]
+
+    if len(endings_matches):
+        matched = endings_matches[0]  # match the first occurance
+        match_type = 'endswith'
+
+    elif len(prefixes_matches):
+        matched = prefixes_matches[0]  # match the first occurance
+        match_type = 'startswith'
+
+    else:
         err("Did not recogize the application type from the tier name %s" %
              logtier)
         sys.exit(1)
-    else:
-        matched_ending = matches[0]  # match the first occurance
 
-    if matched_ending in tier2glob_equivalents:
-        return tier2glob_equivalents[matched_ending]
-    else:
-        return matched_ending
+    if matched in tier2glob_equivalents[match_type]:
+        matched = tier2glob_equivalents[match_type][matched]
+
+    return match_type, matched
 
 def print_options_summary(options):
     err("---------------------------------------------------------------")
@@ -518,10 +540,10 @@ def print_options_summary(options):
     err("log-tiers-globs:   %s" % ",".join(options['log-tiers-globs'].values()))
     err("hosts-list-size:   %s" % len(options['hosts-list']))
     err("")
-    if options['follow']:
+    if options['mode'] == 'follow':
         err("type:             %s" % "follow")
     else:
-        if options['details']:
+        if options['mode'] == 'details':
             err("type:              %s" % "details")
         else:
             err("type:              %s" % "summary")
@@ -544,9 +566,7 @@ if (__name__ == "__main__"):
     ALL_LEVELS = ["INFO", "DEBUG", "WARN", "ERROR", "FATAL"]
 
     default_options = {
-        "details": False,
-        "follow": False,
-        "summary": False,
+        "mode": "summary",
         "fp": "",
         "fp-exclude": "",
         "level": "WARN",
@@ -569,8 +589,11 @@ if (__name__ == "__main__"):
     for k, v in hblogrc_options.items():
         default_options[k] = v
 
-    tier_arguments = sorted(set(tier2glob_map.keys() +
-                   tier2glob_equivalents.keys()) - set(['local']), key=len)
+    tier_arguments = sorted(set(tier2glob_map['startswith'].keys() +
+                   tier2glob_equivalents['startswith'].keys() +
+                   tier2glob_map['endswith'].keys() +
+                   tier2glob_equivalents['endswith'].keys()), key=len)
+
     parser = OptionParser(
         usage="%prog [OPTIONS]... [TIER...] [TIER:HOST...]\n" +
             ("\n  Where TIER is one of:\n\n  %s" % "\n  ".join(tier_arguments)))
@@ -584,23 +607,29 @@ if (__name__ == "__main__"):
         default=default_options['nowrap'],
         help="print characters only up to the width of your terminal")
 
+
     group = OptionGroup(parser, title="Modes", description=
             "Log lines are \"fingerprinted\", usually able to "
             "assign matching fingerprints to log lines that "
             "differ only by timestamp, specific host names, "
             "or other variables.")
 
-    group.add_option("--summary", action="store_true", default=False,
+    group.add_option("--summary", dest="mode", const="summary",
+        action="store_const",
         help="host-vs-fingerprint frequency table (Default mode)")
 
-    group.add_option("--details", "-d", action="store_true", default=False,
+    group.add_option("--details", "-d", dest="mode", const="details",
+        action="store_const",
         help="print all matching log lines embellished with "
             "hostnames and fingerprints")
 
-    group.add_option("--follow", "-f", action="store_true", default=False,
+    group.add_option("--follow", "-f", dest="mode", const="follow",
+        action="store_const",
         help="like --details but streaming, just like 'tail -f'")
 
+    parser.set_defaults(mode=None)
     parser.add_option_group(group)
+
 
     group = OptionGroup(parser, title="Select time", description=
             "If time selectors are not supplied, only the last one minute of "
@@ -671,24 +700,12 @@ if (__name__ == "__main__"):
     # Process CLI options with hblog buisness logic
     modes = ['summary', 'follow', 'details']
 
-    hblogrc_mode_selection = [default_options[i] for i in modes]
-    if sum([1 for x in hblogrc_mode_selection if x]) > 1:
-        raise HBLogEventsException("Only one of %s can be set in ~/.hblogrc" %
-                                                                          modes)
+    if default_options["mode"] not in modes:
+        raise HBLogEventsException("Incorrect mode (%s) configured in "
+                                   "~/.hblogrc" % default_options["mode"])
 
-    cli_mode_selection = [options[i] for i in modes]
-    if sum([1 for x in cli_mode_selection if x]) > 1:
-        raise HBLogEventsException("Only one of %s can be set in CLI options" %
-                                                                          modes)
-
-    if sum(cli_mode_selection) == 0:
-        options["summary"], options["follow"], options["details"] = \
-                                                          hblogrc_mode_selection
-
-    if sum(cli_mode_selection + hblogrc_mode_selection) == 0:
-        options["summary"] = True
-        options["follow"] = False
-        options["details"] = False
+    if not options["mode"]:
+        options["mode"] = default_options["mode"]
 
     for i in ['fp', 'fp-exclude']:
         options[i] = options[i].split(',')
@@ -736,7 +753,7 @@ if (__name__ == "__main__"):
             "Multiple tiers can be space-separated.")
 
     # Default to tailing the last 1 minutes, unless in follow mode
-    if options['follow']:
+    if options['mode'] == 'follow':
         options['start'] = tail_time_from_str('0:00')
     elif not options['start']:
         options['start'] = tail_time_from_str('1:00')
@@ -748,9 +765,6 @@ if (__name__ == "__main__"):
         options['end'] = datetime.now()
 
     options['duration'] = options['end'] - options['start']
-
-    if options['follow'] or options['details']:
-        options['summary'] = False
 
     options['log-tiers-globs'] = {}
     options['log-tiers-hosts'] = {}
@@ -778,8 +792,9 @@ if (__name__ == "__main__"):
                 tier2glob_map_examples_for_localhost[logtier]
     else:
         for logtier in options['log-tiers']:
-            tier2glob_key = get_matched_ending(logtier.split(':')[0])
-            options['log-tiers-globs'][logtier] = tier2glob_map[tier2glob_key]
+            match_type, matched_key = get_matched(logtier.split(':')[0])
+            options['log-tiers-globs'][logtier] = \
+                                          tier2glob_map[match_type][matched_key]
 
     if options['verbose']:
         err('log-tiers-globs is:')
