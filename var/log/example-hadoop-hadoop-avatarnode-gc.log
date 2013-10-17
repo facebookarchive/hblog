@@ -1,0 +1,96 @@
+2013-09-30T23:01:04.418-0700: 2.218: [GC 2.218: [ParNew
+Desired survivor size 53673984 bytes, new threshold 1 (max 6)
+- age   1:  101462448 bytes,  101462448 total
+: 835206K->99129K(943744K), 0.0351240 secs] 835206K->99129K(4089472K), 0.0352270 secs] [Times: user=0.19 sys=0.04, real=0.04 secs] 
+2013-09-30T23:01:05.772-0700: 3.572: [GC 3.572: [ParNew
+Desired survivor size 53673984 bytes, new threshold 6 (max 6)
+- age   1:    2397224 bytes,    2397224 total
+: 938041K->5507K(943744K), 0.5993680 secs] 938041K->140587K(4089472K), 0.5994290 secs] [Times: user=4.54 sys=0.14, real=0.60 secs] 
+2013-09-30T23:01:08.446-0700: 6.246: [GC 6.556: [ParNew
+Desired survivor size 53673984 bytes, new threshold 1 (max 6)
+- age   1:  107185776 bytes,  107185776 total
+- age   2:     118152 bytes,  107303928 total
+: 844419K->104832K(943744K), 0.5306710 secs] 979499K->500755K(4089472K), 0.5307620 secs] [Times: user=2.52 sys=0.23, real=0.84 secs] 
+2013-09-30T23:01:13.145-0700: 10.946: [GC 10.946: [ParNew
+Desired survivor size 53673984 bytes, new threshold 1 (max 6)
+- age   1:   77532328 bytes,   77532328 total
+: 940893K->104832K(943744K), 0.1529580 secs] 1336816K->672526K(4089472K), 0.1531020 secs] [Times: user=0.92 sys=0.10, real=0.15 secs] 
+2013-09-30T23:01:15.006-0700: 12.806: [GC 12.806: [ParNew
+Desired survivor size 53673984 bytes, new threshold 6 (max 6)
+- age   1:   28940368 bytes,   28940368 total
+: 943744K->55364K(943744K), 0.0560320 secs] 1511438K->654079K(4089472K), 0.0561580 secs] [Times: user=0.35 sys=0.02, real=0.05 secs] 
+2013-09-30T23:01:16.299-0700: 14.100: [GC 14.100: [ParNew
+Desired survivor size 53673984 bytes, new threshold 6 (max 6)
+- age   1:     120936 bytes,     120936 total
+- age   2:   20261672 bytes,   20382608 total
+: 894276K->25232K(943744K), 0.0126380 secs] 1492991K->623947K(4089472K), 0.0127370 secs] [Times: user=0.10 sys=0.00, real=0.01 secs] 
+2013-09-30T23:01:46.249-0700: 44.049: [GC 44.049: [ParNew
+Desired survivor size 53673984 bytes, new threshold 6 (max 6)
+- age   1:     593936 bytes,     593936 total
+- age   2:       7400 bytes,     601336 total
+- age   3:   20205208 bytes,   20806544 total
+: 864144K->22681K(943744K), 0.0487600 secs] 1462859K->621396K(4089472K), 0.0488930 secs] [Times: user=0.38 sys=0.00, real=0.04 secs] 
+2013-09-30T23:06:46.969-0700: 344.770: [GC 344.770: [ParNew
+Desired survivor size 53673984 bytes, new threshold 6 (max 6)
+- age   1:    5877416 bytes,    5877416 total
+- age   2:     258144 bytes,    6135560 total
+- age   3:       6512 bytes,    6142072 total
+- age   4:   18630992 bytes,   24773064 total
+: 861593K->24677K(943744K), 0.0314400 secs] 1460308K->623392K(4089472K), 0.0315680 secs] [Times: user=0.21 sys=0.00, real=0.03 secs] 
+2013-09-30T23:12:58.800-0700: 716.601: [GC 716.601: [ParNew
+Desired survivor size 53673984 bytes, new threshold 6 (max 6)
+- age   1:    5801184 bytes,    5801184 total
+- age   2:    3760352 bytes,    9561536 total
+- age   3:     255104 bytes,    9816640 total
+- age   4:       6512 bytes,    9823152 total
+- age   5:   17057888 bytes,   26881040 total
+: 863589K->27159K(943744K), 0.0224580 secs] 1462304K->625874K(4089472K), 0.0225860 secs] [Times: user=0.14 sys=0.00, real=0.03 secs] 
+2013-09-30T23:18:58.002-0700: 1075.802: [GC 1075.802: [ParNew
+Desired survivor size 53673984 bytes, new threshold 6 (max 6)
+- age   1:    2755248 bytes,    2755248 total
+- age   2:    3512432 bytes,    6267680 total
+- age   3:    3696040 bytes,    9963720 total
+- age   4:     247696 bytes,   10211416 total
+- age   5:       6512 bytes,   10217928 total
+- age   6:   17057888 bytes,   27275816 total
+: 866071K->27706K(943744K), 0.0283990 secs] 1464786K->626420K(4089472K), 0.0285300 secs] [Times: user=0.18 sys=0.00, real=0.03 secs] 
+2013-09-30T23:25:10.982-0700: 1448.783: [GC 1448.783: [ParNew
+Desired survivor size 53673984 bytes, new threshold 6 (max 6)
+- age   1:    2869944 bytes,    2869944 total
+- age   2:     400832 bytes,    3270776 total
+- age   3:    3446320 bytes,    6717096 total
+- age   4:    3683056 bytes,   10400152 total
+- age   5:     247592 bytes,   10647744 total
+- age   6:       6512 bytes,   10654256 total
+2013-10-01T11:01:43.170-0700: 43240.971: [GC [1 CMS-initial-mark: 1578314K(3145728K)] 1687168K(4089472K), 0.0089580 secs] [Times: user=0.01 sys=0.00, real=0.01 secs] 
+2013-10-01T11:01:43.180-0700: 43240.980: [CMS-concurrent-mark-start]
+2013-10-01T11:01:43.825-0700: 43241.625: [CMS-concurrent-mark: 0.635/0.646 secs] [Times: user=1.42 sys=0.10, real=0.65 secs] 
+2013-10-01T11:01:43.825-0700: 43241.626: [CMS-concurrent-preclean-start]
+2013-10-01T11:01:43.835-0700: 43241.635: [CMS-concurrent-preclean: 0.010/0.010 secs] [Times: user=0.01 sys=0.00, real=0.01 secs] 
+2013-10-01T11:01:43.835-0700: 43241.635: [CMS-concurrent-abortable-preclean-start]
+2013-10-01T11:01:46.973-0700: 43244.773: [GC 43244.773: [ParNew
+Desired survivor size 53673984 bytes, new threshold 6 (max 6)
+- age   1:   13892120 bytes,   13892120 total
+: 937514K->17145K(943744K), 0.0183390 secs] 2515829K->1598620K(4089472K), 0.0184730 secs] [Times: user=0.11 sys=0.01, real=0.02 secs] 
+ CMS: abort preclean due to time 2013-10-01T11:01:48.907-0700: 43246.707: [CMS-concurrent-abortable-preclean: 1.837/5.072 secs] [Times: user=3.79 sys=0.40, real=5.07 secs] 
+2013-10-01T11:01:48.907-0700: 43246.708: [GC[YG occupancy: 152125 K (943744 K)]43246.968: [Rescan (parallel) , 0.0234650 secs]43246.992: [weak refs processing, 0.0030230 secs]43246.995: [scrub string table, 0.0004580 secs] [1 CMS-remark: 1581475K(3145728K)] 1733600K(4089472K), 0.0271790 secs] [Times: user=0.19 sys=0.00, real=0.28 secs] 
+2013-10-01T11:01:49.196-0700: 43246.996: [CMS-concurrent-sweep-start]
+2013-10-01T11:01:49.484-0700: 43247.284: [CMS-concurrent-sweep: 0.284/0.289 secs] [Times: user=0.31 sys=0.00, real=0.29 secs] 
+2013-10-01T11:01:49.484-0700: 43247.285: [CMS-concurrent-reset-start]
+2013-10-01T11:01:49.573-0700: 43247.373: [CMS-concurrent-reset: 0.088/0.088 secs] [Times: user=0.04 sys=0.05, real=0.09 secs] 
+2013-10-02T16:02:59.772-0700: 147717.572: [GC [1 CMS-initial-mark: 2956294K(3145728K)] 3071824K(4089472K), 0.0023680 secs] [Times: user=0.00 sys=0.00, real=0.00 secs] 
+2013-10-02T16:02:59.775-0700: 147717.575: [CMS-concurrent-mark-start]
+2013-10-02T16:03:00.649-0700: 147718.449: [CMS-concurrent-mark: 0.862/0.875 secs] [Times: user=2.30 sys=0.25, real=0.88 secs] 
+2013-10-02T16:03:00.649-0700: 147718.449: [CMS-concurrent-preclean-start]
+2013-10-02T16:03:00.659-0700: 147718.460: [CMS-concurrent-preclean: 0.010/0.010 secs] [Times: user=0.02 sys=0.00, real=0.01 secs] 
+2013-10-02T16:03:00.659-0700: 147718.460: [CMS-concurrent-abortable-preclean-start]
+2013-10-02T16:03:01.509-0700: 147719.310: [GC 147719.310: [ParNew
+Desired survivor size 53673984 bytes, new threshold 6 (max 6)
+- age   1:   14421008 bytes,   14421008 total
+: 943744K->14400K(943744K), 0.0087790 secs] 3900038K->2970830K(4089472K), 0.0089060 secs] [Times: user=0.06 sys=0.00, real=0.01 secs] 
+ CMS: abort preclean due to time 2013-10-02T16:03:05.741-0700: 147723.541: [CMS-concurrent-abortable-preclean: 0.826/5.081 secs] [Times: user=2.42 sys=0.31, real=5.08 secs] 
+2013-10-02T16:03:05.741-0700: 147723.541: [GC[YG occupancy: 271343 K (943744 K)]147723.541: [Rescan (parallel) , 0.0384060 secs]147723.580: [weak refs processing, 0.0046710 secs]147723.585: [scrub string table, 0.0004040 secs] [1 CMS-remark: 2956430K(3145728K)] 3227773K(4089472K), 0.0436270 secs] [Times: user=0.31 sys=0.00, real=0.04 secs] 
+2013-10-02T16:03:05.785-0700: 147723.585: [CMS-concurrent-sweep-start]
+2013-10-02T16:03:06.185-0700: 147723.986: [CMS-concurrent-sweep: 0.396/0.400 secs] [Times: user=0.42 sys=0.00, real=0.40 secs] 
+2013-10-02T16:03:06.185-0700: 147723.986: [CMS-concurrent-reset-start]
+2013-10-02T16:03:06.226-0700: 147724.026: [CMS-concurrent-reset: 0.040/0.040 secs] [Times: user=0.04 sys=0.00, real=0.04 secs] 

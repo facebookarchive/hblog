@@ -18,7 +18,6 @@ from optparse import OptionParser, OptionGroup
 
 import re
 import sys
-import socket
 import getopt
 import subprocess
 import time
@@ -263,10 +262,13 @@ class HBLogEvents:
         for l in sorted(fp_summary.values(), reverse=True):
             l['norm_text'] = l['norm_text'].replace('\t', '\\t')  # show tabs
 
+            # Truncate fingerprints
+            print_fingerprints.append(l['fp'])
+            l['fp'] = l['fp'][0:7]
+
             print ("%(count)7d  %(fp)-12s  %(level)-6s %(norm_text)-" +
                 str(summary_width) + "." + str(summary_width) + "s") % l
 
-            print_fingerprints.append(l['fp'])
             i = summary_width
             while l['norm_text'][i:]:
                 print "%29s" % "",
@@ -281,11 +283,12 @@ class HBLogEvents:
             how_many_fps_will_fit = (TERMINAL_WIDTH - 19) / 11
             print_fingerprints = print_fingerprints[:how_many_fps_will_fit]
 
-        if print_fingerprints:
+        if len(print_fingerprints) > 0:
             print
             print "%19.19s" % "",
             for fp in print_fingerprints:
-                print "%-10s" % fp,
+                # Truncate fingerprints
+                print "%-10s" % fp[0:7],
             print
             print
 
@@ -295,8 +298,13 @@ class HBLogEvents:
                 if len(fp_summary.keys()) > 0:
                     print "%16.16s" % host,
                     for fp in print_fingerprints:
-                        if fp in fp_summary.keys():
-                            print "%10d" % fp_summary[fp]['count'],
+                        fp_matches = [i for i in fp_summary.keys() if
+                                                             i.startswith(fp)]
+                        if len(fp_matches) == 1:
+                            print "%10d" % fp_summary[fp_matches[0]]['count'],
+                        elif len(fp_matches) > 1:
+                            sys.stdout.write("WARNING: %s matched more then "
+                                                     "one fingerprint\n" % fp)
                         else:
                             print "%10.10s" % "",
                     print
@@ -318,6 +326,10 @@ class HBLogEvents:
 
         for l in sorted(all, key=lambda x: x['ts']):
             l['text'] = l['text'].replace('\t', '\\t')  # show tabs
+
+            # Truncate fingerprints
+            l['fp'] = l['fp'][0:7]
+
             line = " ".join([l['ts'], l['fp'], l['level'].ljust(5), l['host'],
                             l['text']])
             if self.options['nowrap']:
@@ -438,48 +450,68 @@ def list_hosts_of_tier(tier_name):
     if returncode == 0:
         return list(set(stdout.split("\n")))  # dedup
     elif returncode == 2:
-        # Could not recognize tier, lets see it this is a DNS hostname
-        try:
-            socket.gethostbyname(tier_name)
-        except socket.error:
-            raise HBLogEventsException("Tier %s not recognized and "
-                                        "not a hostname" % tier_name)
-        else:
-            return [tier_name]
+        raise HBLogEventsException("Tier '%s' is not recognized by "
+                                               "list_hosts_of_tier" % tier_name)
 
     else:
         raise HBLogEventsException(
-            "Shelling-out returned non-zero exit status %d" % returncode)
+            "Shelling-out returned non-zero exit status %d; "
+            "Stdout: %s; Stderr: %s;" % (returncode, stdout, stderr))
 
 # Map tier endings to globs
 tier2glob_map_examples_for_localhost = {
     'nn': './var/log/example-hadoop-hadoop-avatarnode.log*',
+    'nn-gc': './var/log/example-hadoop-hadoop-avatarnode-gc.log*',
     'syslog': './var/log/example-syslog-messages.log*',
 }
 
 tier2glob_map = {
     'endswith': {
-        'nn': '/var/log/hadoop/*-DFS/hadoop-hadoop-avatarnode*',
-        'dfs-slaves': '/var/log/hadoop/*-DFS/hadoop-hadoop-avatardatanode*',
-        'master': '/var/log/hadoop/*-HBASE/hbase-hadoop-master*',
-        'regionservers': '/var/log/hadoop/*-HBASE/hbase-hadoop-regionserver*',
-        'hbase-thrift': '/var/log/hadoop/*-HBASE/hbase-hadoop-thrift*',
-        'hbase-zookeepers': '/var/log/hadoop/*-HBASE/hbase-hadoop-zookeeper*',
-        'zookeepers': '/var/log/hadoop/*-ZK/hbase-hadoop-zookeeper*',
-        'jt': '/var/log/hadoop/*-MR/hadoop-hadoop-jobtracker*',
-        'mr-slaves': '/var/log/hadoop/*-MR/hadoop-hadoop-tasktracker*',
+        'dfs-nn': '/var/log/hadoop/*-DFS/hadoop-hadoop-avatarnode-[!g][!c]*',
+        'dfs-nn-gc': '/var/log/hadoop/*-DFS/hadoop-hadoop-avatarnode-gc*',
+
+        'dfs-slaves':
+            '/var/log/hadoop/*-DFS/hadoop-hadoop-avatardatanode-[!g][!c]*',
+        'dfs-slaves-gc':
+            '/var/log/hadoop/*-DFS/hadoop-hadoop-avatardatanode-gc*',
+
+        'hbase-master': '/var/log/hadoop/*-HBASE/hbase-hadoop-master-[!g][!c]*',
+        'hbase-master-gc': '/var/log/hadoop/*-HBASE/gc-hbase*',
+
+        'hbase-regionservers':
+            '/var/log/hadoop/*-HBASE/hbase-hadoop-regionserver-[!g][!c]*',
+        'hbase-thrift': '/var/log/hadoop/*-HBASE/hbase-hadoop-thrift-[!g][!c]*',
+
+        'hbase-zookeepers':
+            '/var/log/hadoop/*-HBASE/hbase-hadoop-zookeeper-[!g][!c]*',
+
+        'zookeepers': '/var/log/hadoop/*-ZK/hbase-hadoop-zookeeper-[!g][!c]*',
+
+        'mr-jt': '/var/log/hadoop/*-MR/hadoop-hadoop-jobtracker-[!g][!c]*',
+        'mr-jt-gc': '/var/log/hadoop/*-MR/hadoop-hadoop-jobtracker-gc*',
+
+        'mr-slaves': '/var/log/hadoop/*-MR/hadoop-hadoop-tasktracker-[!g][!c]*',
+        'mr-slaves-gc': '/var/log/hadoop/*-MR/hadoop-hadoop-tasktracker-gc*',
+
         'syslog': '/var/log/system/messages*',
     },
     'startswith': {
+    },
+    're': {
     }
 }
 
 tier2glob_equivalents = {
     'endswith': {
-        'sn': 'nn',
-        'secondary': 'master'
+        'dfs-sn': 'dfs-nn',
+        'dfs-sn-gc': 'dfs-nn-gc',
+        'hbase-secondary': 'hbase-master',
+        'hbase-secondary-gc': 'hbase-master-gc',
+        'hbase-regionservers-gc': 'hbase-master-gc',
     },
     'startswith': {
+    },
+    're': {
     }
 }
 
@@ -494,7 +526,15 @@ def get_matched(logtier):
     tier_endings.sort(key=len, reverse=True)  # tiebreaker, match longest
     endings_matches = [i for i in tier_endings if logtier.endswith(i)]
 
-    if len(endings_matches):
+    tier_re_list = (tier2glob_map['re'].keys() +
+                                       tier2glob_equivalents['re'].keys())
+    re_matches = [i for i in tier_re_list if re.match(i, logtier)]
+
+    if len(re_matches):
+        matched = re_matches[0]  # match the first occurance
+        match_type = 're'
+
+    elif len(endings_matches):
         matched = endings_matches[0]  # match the first occurance
         match_type = 'endswith'
 
@@ -577,6 +617,7 @@ if (__name__ == "__main__"):
         "verbose": False,
         "tail": None,
         "tail-end": None,
+        "log-tiers": [],
     }
 
     # Load defaults from ~/.hblogrc
@@ -589,14 +630,30 @@ if (__name__ == "__main__"):
     for k, v in hblogrc_options.items():
         default_options[k] = v
 
-    tier_arguments = sorted(set(tier2glob_map['startswith'].keys() +
-                   tier2glob_equivalents['startswith'].keys() +
-                   tier2glob_map['endswith'].keys() +
-                   tier2glob_equivalents['endswith'].keys()), key=len)
+    tier_arguments = sorted(set(
+                                tier2glob_map['startswith'].keys() +
+                                tier2glob_equivalents['startswith'].keys() +
+                                tier2glob_map['endswith'].keys() +
+                                tier2glob_equivalents['endswith'].keys() +
+                                tier2glob_map['re'].keys() +
+                                tier2glob_equivalents['re'].keys()))
+
+    num_cols = 3
+    step_len = len(tier_arguments) / num_cols
+    col_width = 80 / num_cols
+    if len(tier_arguments) % num_cols != 0:
+        tier_arguments.append(" ")
+    raw_cols = [tier_arguments[step_len * i: step_len * (i + 1)] for
+                                                        i in range(0, num_cols)]
+
+    final_columns = []
+    for line in zip(*raw_cols):
+        final_columns.append(" ".join([i.ljust(col_width, " ") for i in line]))
 
     parser = OptionParser(
         usage="%prog [OPTIONS]... [TIER...] [TIER:HOST...]\n" +
-            ("\n  Where TIER is one of:\n\n  %s" % "\n  ".join(tier_arguments)))
+            ("\n  Where TIER is one of:\n\n  %s" %
+                                           "\n  ".join(final_columns)))
     parser.description = "hblog - a log paser for clusters"
 
     parser.add_option("--verbose", "-v", action="store_true",
@@ -713,7 +770,7 @@ if (__name__ == "__main__"):
             options[i] = []
 
         for fp in options['fp']:
-            if len(fp) != 8:
+            if re.match('^[0-9a-f]+$', fp, re.IGNORECASE) is None:
                 parser.error("invalid fingerprint: %s" % fp)
 
     for i in ['re', 're-exclude']:

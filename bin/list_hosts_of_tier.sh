@@ -5,28 +5,49 @@
 function lhot_usage(){
   echo "Usage: list_hosts_of_tier <name>"
   echo "       list_hosts_of_tier --list-tiers"
+  echo
+  echo "NOTE: This script, for some arguments assumes that "
+  echo "      \$cellname environmental variable is set."
+  echo "      E.g.: export cellname=cluster001"
 }
 
 function lhot_list_all_tiers(){
     local matches
 
     # Shorthand
-    local shorthand_matches="$(echo nn                \
-                                    jt                \
-                                    sn                \
-                                    syslog            \
-                                    master            \
-                                    mr-slaves         \
-                                    secondary         \
-                                    zookeepers        \
-                                    dfs-slaves        \
-                                    hbase-thrift      \
-                                    regionservers     \
-                                    hbase-zookeepers  | sed 's/ /\n/g')"
+    local matches_endswith="$(echo \
+                                    dfs-nn \
+                                    dfs-sn \
+                                    dfs-slaves \
+                                    hbase-regionservers \
+                                    hbase-master \
+                                    hbase-secondary \
+                                    hbase-thrift \
+                                    mr-jt \
+                                    mr-slaves \
+                                    zookeepers \
+                                    | sed 's/ /\n/g')"
+    matches="$matches\n$matches_endswith"
+    matches="$matches\nsyslog"
+    matches="$matches\ngc"
 
-    local shorthand_re_list="$(echo -e "$shorthand_matches" | \
-                                            while read m; do echo "$m$"; done)"
-    matches="$matches\n$shorthand_matches"
+    # Java GC and syslog shorthand
+    matches="$(
+    echo -e "$matches_endswith" | while read ending; do
+        echo "$ending-syslog"
+        echo "$ending-gc"
+    done)\n$matches"
+
+    # hbase cells tiers + Java GC + syslog
+    hbase_cells="cluster001\ncluster002\ncluster003"
+    matches="$(
+    echo -e "$hbase_cells" | while read cell; do
+      echo -e "$matches_endswith" | while read ending; do
+        echo "$cell-$ending"
+        echo "$cell-$ending-gc"
+        echo "$cell-$ending-syslog"
+      done
+    done)\n$matches"
 
     # remove empty lines and echo
     echo -e "$matches" | sed -e '/^[[:space:]]*$/d'
@@ -54,50 +75,59 @@ function lhot_list_hosts_porcelain(){
   local)
     out="localhost"
     ;;
-  nn)
+  dfs-nn|dfs-nn-gc|dfs-nn-syslog )
     out="$(lhot_get_hosts $cellname-dfs-nn)"
     ;;
-  sn)
+  dfs-sn|dfs-sn-gc|dfs-sn-syslog )
     out="$(lhot_get_hosts $cellname-dfs-sn)"
     ;;
-  master)
+  hbase-master|hbase-master-gc|hbase-master-syslog )
     out="$(lhot_get_hosts $cellname-hbase-master)"
     ;;
-  secondary)
+  hbase-secondary|hbase-secondary-gc|hbase-secondary-syslog )
     out="$(lhot_get_hosts $cellname-hbase-secondary)"
     ;;
-  regionservers)
+  hbase-regionservers|hbase-regionservers-gc|hbase-regionservers-syslog )
     out="$(lhot_get_hosts $cellname-hbase-regionservers)"
     ;;
-  dfs-slaves)
+  dfs-slaves|dfs-slaves-gc|dfs-slaves-syslog )
     out="$(lhot_get_hosts $cellname-dfs-slaves)"
     ;;
-  hbase-thrift)
+  hbase-thrift|hbase-thrift-gc|hbase-thrift-syslog )
     out="$(lhot_get_hosts $cellname-hbase-thrift)"
     ;;
-  hbase-zookeepers)
-    out="$(lhot_get_hosts $cellname-hbase-zookeepers)"
-    ;;
-  jt)
+  mr-jt|mr-jt-gc|mr-jt-syslog )
     out="$(lhot_get_hosts $cellname-mr-jt)"
     ;;
-  mr-slaves)
+  mr-slaves|mr-slaves-gc|mr-slaves-syslog )
     out="$(lhot_get_hosts $cellname-mr-slaves)"
     ;;
-  zookeepers)
+  zookeepers|zookeepers-gc|zookeepers-syslog )
     out="$(lhot_get_hosts $cellname-zookeepers)"
     ;;
+  *-gc)
+    tier1="$(echo "$tier" | sed 's|-gc$||')"
+    out="$(lhot_get_hosts $tier1)"
+    ;;
   *-syslog)
-    cellname="$(echo "$tier" | sed 's|-syslog$||')"
-    out="$(lhot_get_hosts $cellname-hbase-regionservers)"
-    out="$out\n$(lhot_get_hosts $cellname-controllers)"
+    tier1="$(echo "$tier" | sed 's|-syslog$||')"
+    out="$(lhot_get_hosts $tier1)"
     ;;
   syslog)
     out="$(lhot_get_hosts $cellname-hbase-regionservers)"
     out="$out\n$(lhot_get_hosts $cellname-controllers)"
     ;;
+  gc)
+    out="$(lhot_get_hosts $cellname-hbase-regionservers)"
+    out="$out\n$(lhot_get_hosts $cellname-controllers)"
+    ;;
   *)
-    out="$(lhot_get_hosts $tier)"
+    if host $tier &> /dev/null; then
+      out="$(lhot_get_hosts $tier)"
+    else
+      echo "Can't recognize tier $tier"
+      return 2
+    fi
     ;;
   esac
 

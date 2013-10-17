@@ -125,21 +125,25 @@ class HBLogHandlersParent(tornado.web.RequestHandler):
         for line in log_accessor:
             if 'unrecognized_line' in line.keys() and line['unrecognized_line']:
                 if not previous_line:
-                    raise LogAccessorException("Got unrecognized line "
+                    if self.settings['verbose']:
+                        err("Got unrecognized line "
                                             "before any recognized line in %s" %
                                             log_accessor.get_universal_offset())
 
-            if not self.url_args.has_key("universal-offset") and \
+            elif not self.url_args.has_key("universal-offset") and \
                                                           line['ts'] > end_time:
                 if self.settings['verbose']:
                     err("----- reached end-time at --------------")
                     err(line)
                     err("----------------------------------------")
+
                 raise StopIteration
+                # for unrecognized lines don't StopIteration
 
             if line['level'] in self.url_args['levels-list']:
                 if self.url_args['fp'] == []:
-                    if line['fp'] not in self.url_args['fp-exclude']:
+                    if not any([True for fpex in self.url_args['fp-exclude'] if
+                                                  line['fp'].startswith(fpex)]):
                         take_it = False
                         if self.url_args['re'] == []:
                             take_it = True
@@ -151,7 +155,8 @@ class HBLogHandlersParent(tornado.web.RequestHandler):
                                 take_it = False
                         if take_it:
                             yield line
-                elif line['fp'] in self.url_args['fp']:
+                elif any([True for fp in self.url_args['fp'] if
+                                                    line['fp'].startswith(fp)]):
                     yield line
 
             previous_line = line

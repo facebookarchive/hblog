@@ -17,7 +17,6 @@
 import re
 import sys
 import socket
-import hashlib
 import base64
 import getopt
 import subprocess
@@ -67,8 +66,12 @@ class LogAccessor():
             LogAccessorException(
                 "ERROR: No log files matched %s" % log_path_glob)
 
+        if len(log_files) > 1000:
+            LogAccessorException(
+                "ERROR: More than 1000 log files matched %s" % log_path_glob)
+
         for filename in log_files:
-            if not filename.endswith('.gz'):
+            if not filename.endswith('.gz') and os.stat(filename).st_size > 10:
                 try:
                     logfile = SingleFileLogAccessor(filename,
                                              sampling_rate=sampling_rate,

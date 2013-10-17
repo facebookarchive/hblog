@@ -18,7 +18,6 @@ import re
 import sys
 import socket
 import hashlib
-import base64
 import getopt
 import subprocess
 import Queue
@@ -62,7 +61,16 @@ class SingleFileLogAccessor():
             s = "%s %s" % (datetime.now().year, s)  # imply this year
             return s
 
+        def gclog_timestamp_transform(s):
+            # chop off the timezone info, because
+            # %z, documented as "UTC offset in the form +HHMM or -HHMM",
+            # is not fully supported python 2.3 thru 2.7 in datetime.strptime
+            s = re.sub(re.compile(r'-?\d{4}$'), '', s)
+            return s
+
         # RE's will be checked in the order as the appear in LOGLINE_RE_LIST
+        # NOTE: all re's must have four groups:
+        #       (1) timestamp; (2) log level; (3) something to ignore; (4) body;
         self.LOGLINE_RE_LIST = [
             {'re': re.compile(
              r'(\d\d\d\d\-\d\d\-\d\d \d\d:\d\d:\d\d,\d+) +(\[.*?\])? *(\w+) +(.+)\n'
@@ -72,11 +80,19 @@ class SingleFileLogAccessor():
              'comments': 'log4j format. E.g. "2013-12-30 23:50:50,121"'},
 
             {'re': re.compile(
-             r'([A-Za-z]{3} +\d{1,2} +\d\d:\d\d:\d\d) +(\[.*?\])? *(\w+) +(.+)\n'
+             r'([A-Za-z]{3} +\d{1,2} +\d\d:\d\d:\d\d) *()?()?(.+)\n'
              ),
              'time_format': '%Y %b %d %H:%M:%S',
              'timestr_transform': syslog_timestamp_transform,
              'comments': 'typical syslog format. E.g. "Oct  1 13:57:31"'},
+
+            {'re': re.compile(
+              r'(\d\d\d\d\-\d\d\-\d\dT\d\d:\d\d:\d\d.\d+-?\d*): *()?()?(.+)\n'
+             ),
+             'time_format': '%Y-%m-%dT%H:%M:%S.%f',
+             'timestr_transform': gclog_timestamp_transform,
+             'comments': 'java garbage collection log format. '
+                'E.g. "2013-09-30T23:12:58.800-0700: 716.601: [GC: [ParNew"'},
         ]
 
         self.SQUEEZE_RE = (
@@ -214,7 +230,7 @@ class SingleFileLogAccessor():
                         if m:
                             if self.debug:
                                 self.err('DEBUG: MATCHED %s' %
-                                                        logline_re.pattern)
+                                                       logline_re['re'].pattern)
 
                             ts = self.str_to_time(m.group(1),
                                           time_format=logline_re['time_format'],
@@ -259,7 +275,7 @@ class SingleFileLogAccessor():
                                 # will be attributed from the previous line
                                 r = {'ts': current_rec['ts'],
                                      'level': current_rec['level'],
-                                     'text': next_line,
+                                     'text': next_line.rstrip(),
                                      'unrecognized_line': True}
 
                                 (r['norm_text'], r['fp']) = self.squeeze(r['text'])
@@ -355,7 +371,7 @@ class SingleFileLogAccessor():
         for m, r in self.SQUEEZE_RE:
             s = re.sub(m, r, s)
 
-        f = base64.b64encode(hashlib.md5(s).digest())[:8]
+        f = hashlib.md5(s).hexdigest()
 
         return (s, f)
 
