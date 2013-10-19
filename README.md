@@ -297,11 +297,11 @@ Setup
 Run
 ----
 
-  cd hblog
+    cd hblog
 
-  ./sbin/hblogd.py  # in a separate tab or in screen/tmux
+    ./sbin/hblogd.py  # in a separate tab or in screen/tmux
 
-  export PATH="$PATH:$(pwd)/bin"  # for list_hosts_of_tier.sh
-  ./bin/hblog.py --local  --start '2011-03-27 12:48:18' nn
-  ./bin/hblog.py --local  --start '2011-03-27 12:48:18' nn-gc
-  ./bin/hblog.py --local  --start '2011-03-27 12:48:18' syslog
+    export PATH="$PATH:$(pwd)/bin"  # for list_hosts_of_tier.sh
+    ./bin/hblog.py --local  --start '2011-03-27 12:48:18' nn
+    ./bin/hblog.py --local  --start '2011-03-27 12:48:18' nn-gc
+    ./bin/hblog.py --local  --start '2011-03-27 12:48:18' syslog
