@@ -103,6 +103,10 @@ class LogAccessor():
         }
         self.logline_generator = self.next_def()
 
+    def close_all_files(self):
+        for single_file_log_accessor in self.open_logfiles:
+            self.err("INFO: Closing %s" % single_file_log_accessor)
+            single_file_log_accessor.python_file_object.close()
 
     def __iter__(self):
         return self

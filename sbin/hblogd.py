@@ -196,6 +196,8 @@ class LogStream(HBLogHandlersParent):
             line_pkg = {'pkg-cls': 'log-accessor-line', 'pkg-obj': line}
             self.write("%s\n" % json.dumps(line_pkg))
 
+        log_accessor.close_all_files()
+
         line_pkg = {'pkg-cls': 'exit-status',
                     'pkg-obj':
                       {'status': 'success',
@@ -217,6 +219,8 @@ class LogSummary(HBLogHandlersParent):
         results = []
         for line in self.fetch_and_filter(log_accessor):
             results.append(line)
+
+        log_accessor.close_all_files()
 
         summary = summarize(results)
         line_pkg = {'pkg-cls': 'log-accessor-line', 'pkg-obj': summary}
