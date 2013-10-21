@@ -105,7 +105,8 @@ class LogAccessor():
 
     def close_all_files(self):
         for single_file_log_accessor in self.open_logfiles:
-            self.err("INFO: Closing %s" % single_file_log_accessor)
+            if self.verbose:
+                self.err("INFO: Closing " + single_file_log_accessor.filename)
             single_file_log_accessor.python_file_object.close()
 
     def __iter__(self):
